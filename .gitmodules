@@ -1,0 +1,28 @@
+[submodule "design-system"]
+	path = design-system
+	url = https://github.com/EugenioTesio/modular-flutter-app-design-system.git
+	branch = main
+[submodule "appshell"]
+	path = appshell
+	url = https://github.com/EugenioTesio/modular-flutter-app-appshell.git
+	branch = main
+[submodule "transfers-microapp"]
+	path = transfers-microapp
+	url = https://github.com/EugenioTesio/modular-flutter-app-transfers-microapp.git
+	branch = main
+[submodule "accounts-microapp"]
+	path = accounts-microapp
+	url = https://github.com/EugenioTesio/modular-flutter-app-accounts-microapp.git
+	branch = main
+[submodule "home-microapp"]
+	path = home-microapp
+	url = https://github.com/EugenioTesio/modular-flutter-app-home-microapp.git
+	branch = main
+[submodule "core"]
+	path = core
+	url = https://github.com/EugenioTesio/modular-flutter-app-core.git
+	branch = main
+[submodule "foundations"]
+	path = foundations
+	url = https://github.com/EugenioTesio/modular-flutter-app-foundations.git
+	branch = main
