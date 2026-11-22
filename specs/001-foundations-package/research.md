@@ -66,14 +66,14 @@ This decision was revised on 2026-11-21. The `design-system` repository is still
   - Remove `static late InterModuleCommunication instance` (FR-016).
   - Add `InterModuleStatusCode` (`ok`, `badRequest`, `notFound`, `internalError`) and `InterModuleErrorCode` (`missingRequiredParameters`, `endpointNotRegistered`, `unauthenticated`, `forbidden`) as `abstract final class`es with `static const` members (FR-012).
   - Add the named constructors `InterModuleCommunicationResponse.success(data)` and `.failure(statusCode:, errorCode:)` to the response.
-  - Add `DuplicateEndpointError` (an `Error` subtype that carries `url` and `kind`) for rejected duplicate registrations (FR-014).
+  - Add `DuplicateEndpointException` (an `Exception`, kept in `lib/src/exceptions/` like every exception, that carries `url` and `type`) for rejected duplicate registrations (FR-014).
   - Add `isInterModuleValue(Object?)`, which states the payload rule (primitives, lists, and maps with `String` keys) so Core can assert it and tests can check it.
   - Added on 2026-11-21 from `flutter_enterprise_architecture` ([R20](#r20-adapting-flutter_enterprise_architecture)):
-    - `isRegistered({url, kind})`;
+    - `isRegistered({url, type})`;
     - an optional `traceName` on `InterModuleEndpoint`;
     - the class-based `DataEndpointProvider` and `WidgetEndpointProvider`;
     - the `registerProviders` bulk extension.
-- **Rationale**: Teams that read the article will recognise the API. The additions turn implied behaviour into published values (codes, errors, the payload rule) without changing the article's shape. A thrown `Error` matches Dart's convention for programmer mistakes, and duplicate registration is one.
+- **Rationale**: Teams that read the article will recognise the API. The additions turn implied behaviour into published values (codes, errors, the payload rule) without changing the article's shape. Duplicate registration throws a `DuplicateEndpointException` (user convention: exceptions are named `…Exception` and live in `lib/src/exceptions/`), and hosts let it stop startup.
 - **Alternatives considered**:
   - A sealed success/failure response type: rejected because it diverges from the article and from status-code handling that mirrors HTTP.
   - Returning a failure response from `register` instead of throwing: rejected because a duplicate is a wiring bug that should stop startup, not a runtime outcome.
@@ -82,7 +82,7 @@ This decision was revised on 2026-11-21. The `design-system` repository is still
 
 - **Decision**:
   - Use one shared `sealed class Result<T, F>` with `Ok<T, F>(value)` and `Err<T, F>(failure)` for capability operations that can fail: the API client and storage.
-  - Each capability has its own failure type: `ApiFailure` with `ApiFailureKind`, and `StorageFailure`.
+  - Each capability has its own failure type: `ApiFailure` with `ApiFailureType`, and `StorageFailure`.
   - Navigation uses its own sealed `NavigationResult` (`RouteCompleted`, `RouteCancelled`, `RouteNotFound`), because "cancelled" is a normal ending, not a failure.
 - **Rationale**:
   - Explicit, exhaustive outcomes satisfy FR-028 without exceptions crossing the contract.
@@ -137,7 +137,7 @@ This question was deferred during clarify.
   - Implementations attach credentials and resolve the base address for the environment. Micro apps never see either (FR-039).
   - Failures map like this:
 
-| Condition | `ApiFailureKind` |
+| Condition | `ApiFailureType` |
 |-----------|------------------|
 | No connection or DNS failure | `noConnectivity` |
 | The deadline was exceeded | `timeout` |
@@ -167,7 +167,7 @@ This question was deferred during clarify.
   - Revised on 2026-11-21, from the user's stored-keys idea:
     - Every micro app declares its keys in `MicroApp.storedKeys`, which the host reads before `initialize`.
     - The host stops startup if two micro apps declare the same key.
-    - Core builds each micro app's `KeyValueStore` and `SecureKeyValueStore` limited to its declared keys. Any operation on another key returns `Err(StorageFailure(kind: undeclaredKey))`.
+    - Core builds each micro app's `KeyValueStore` and `SecureKeyValueStore` limited to its declared keys. Any operation on another key returns `Err(StorageFailure(type: undeclaredKey))`.
     - Keys *should* follow `<microAppId>.<key>`, but it is the declaration that reserves a key. Legacy keys such as `auth_token` can be declared as they are.
 - **Rationale**:
   - String values match what secure-storage vendors support and keep the contract vendor-neutral. Each micro app serializes its own models (FR-005).
@@ -302,7 +302,7 @@ This decision was added on 2026-11-21, at the user's request: take the main idea
 |------|----------------------|--------------|
 | Microapps declare `brokers`, and the shell registers them all (`registerSet`) | `MicroApp.dataEndpoints` / `widgetEndpoints` hold class-based `DataEndpointProvider` / `WidgetEndpointProvider`. The host calls `registerProviders` once, after every `initialize`. | FR-029, FR-046, FR-047 |
 | A `BrokerInterface` is a class with `route` + `requiredParameters` + `receive` | A provider declares an `endpoint` (URL + required parameters) and implements `handle` or `build`. Unit tests call it directly, with no Core (SC-014). | FR-046 |
-| `IBroker.isRegistered(route)` | `InterModuleCommunication.isRegistered({url, kind})`, covered by conformance case C17 | FR-010 |
+| `IBroker.isRegistered(route)` | `InterModuleCommunication.isRegistered({url, type})`, covered by conformance case C17 | FR-010 |
 | `guardedRoutes` / `unguardedRoutes` | `MicroAppRoute.requiresAuthentication`, default `true`. The host guards these routes with `SessionContext`. | FR-048 |
 | Routes of the router's type `T`, which the shell turns into the router | A router-neutral route contract (`MicroAppRoute` with name, path pattern, builder, presentation, and children, plus `MicroAppRouteGroup`). Core builds the real router from it ([contracts/routing.md](contracts/routing.md)). This is the user's stated intent. | FR-053, R15 |
 | `commonStoredKeys` with duplicate detection | `MicroApp.storedKeys`: duplicates stop startup, and each micro app's stores are limited to its declared keys, so no micro app can overwrite another's values. This is the user's stated purpose. | FR-052, R12 |

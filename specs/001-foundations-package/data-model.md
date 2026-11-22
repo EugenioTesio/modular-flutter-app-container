@@ -41,14 +41,14 @@ Foundations stores no data. Its "data model" is the set of value types, states, 
 
 | Entity | Fields | Rules |
 |--------|--------|-------|
-| `EndpointKind` | `data`, `widget` | Each kind has its own registry, so the same `url` can appear once in each (FR-014). |
-| `DuplicateEndpointError` | `url`, `kind` | Thrown by `register` or `registerWidget` when the `url` already exists in the registry for that kind. Hosts should let it stop startup. |
+| `EndpointType` | `data`, `widget` | Each type has its own registry, so the same `url` can appear once in each (FR-014). |
+| `DuplicateEndpointException` | `url`, `type` | Thrown by `register` or `registerWidget` when the `url` already exists in the registry for that type. Hosts should let it stop startup. |
 | `InterModuleHandler` | function `(Map<String, Object?> parameters) → Future<Response<Map<String, Object?>>>` | It is invoked only after the required-parameter check passes. When it throws or its future fails, the caller gets a 500. |
 | `InterModuleWidgetFactory` | function `(Map<String, Object?> parameters) → Response<Widget>` | It runs synchronously and returns its element without waiting for the element's data (FR-015). When it throws, the caller gets a 500. |
 | `DataEndpointProvider` | `endpoint: InterModuleEndpoint`, `handle(parameters)` | A class that a micro app declares in `dataEndpoints`. `endpoint.url` and `endpoint.requiredParameters` are its registration. It can be called directly in unit tests (FR-046). |
 | `WidgetEndpointProvider` | `endpoint: InterModuleEndpoint`, `build(parameters)` | The same, for UI endpoints, declared in `widgetEndpoints`. |
 
-**Lifecycle**: Hosts register every declared provider in one step (`registerProviders`), after all micro apps have initialized and before the app runs. A registration lasts for the life of the app. There is no unregistration, and micro apps never call `register` directly ([research R8](research.md#r8-endpoint-registration-lifecycle)). `isRegistered(url, kind)` reports registrations without invoking any provider.
+**Lifecycle**: Hosts register every declared provider in one step (`registerProviders`), after all micro apps have initialized and before the app runs. A registration lasts for the life of the app. There is no unregistration, and micro apps never call `register` directly ([research R8](research.md#r8-endpoint-registration-lifecycle)). `isRegistered(url, type)` reports registrations without invoking any provider.
 
 ## Common outcome type
 
@@ -74,12 +74,12 @@ Foundations stores no data. Its "data model" is the set of value types, states, 
 | `ApiMethod` | `get`, `post`, `put`, `patch`, `delete` | |
 | `ApiRequest` | `method`, `path`, `query: Map<String, String>`, `headers: Map<String, String>`, `body: Object?` | `path` is relative and starts with `/`. `body` must be JSON-encodable. The implementation sets credential headers and overrides any header with the same name that the caller supplies. |
 | `ApiResponse` | `statusCode: int`, `body: Object?` (decoded JSON), `headers: Map<String, String>` | It is returned only for 2xx and 3xx responses. |
-| `ApiFailure` | `kind: ApiFailureKind`, `statusCode: int?`, `body: Object?` | Each failure has exactly one kind (see the table below). |
-| `ApiFailureKind` | `noConnectivity`, `timeout`, `unauthorized`, `clientError`, `serverError` | See the mapping table below. |
+| `ApiFailure` | `type: ApiFailureType`, `statusCode: int?`, `body: Object?` | Each failure has exactly one type (see the table below). |
+| `ApiFailureType` | `noConnectivity`, `timeout`, `unauthorized`, `clientError`, `serverError` | See the mapping table below. |
 
-How failures map to `ApiFailureKind` ([research R10](research.md#r10-api-client-contract)):
+How failures map to `ApiFailureType` ([research R10](research.md#r10-api-client-contract)):
 
-| Condition | `ApiFailureKind` |
+| Condition | `ApiFailureType` |
 |-----------|------------------|
 | No connection or DNS failure | `noConnectivity` |
 | The deadline was exceeded | `timeout` |
@@ -114,7 +114,7 @@ How failures map to `ApiFailureKind` ([research R10](research.md#r10-api-client-
 |--------|--------|-------|
 | Storage entry | `key: String`, `value: String` | The key must be one of the owning micro app's `storedKeys` (FR-052). It should follow `<microAppId>.<key>`, but legacy keys may be declared as they are. Values are opaque strings that each micro app serializes itself. |
 | Stored key | `String`, declared in `MicroApp.storedKeys` | Declared by exactly one micro app in the host, and covers both general and secure storage. A duplicate stops startup, naming the key and both micro apps. |
-| `StorageFailure` | `kind: StorageFailureKind`, `key: String` | `StorageFailureKind` is one of `unavailable`, `readFailed`, `writeFailed`, `deleteFailed`, or `undeclaredKey`. `undeclaredKey` is returned for any operation on a key the calling micro app did not declare. |
+| `StorageFailure` | `type: StorageFailureType`, `key: String` | `StorageFailureType` is one of `unavailable`, `readFailed`, `writeFailed`, `deleteFailed`, or `undeclaredKey`. `undeclaredKey` is returned for any operation on a key the calling micro app did not declare. |
 
 `SecureKeyValueStore` holds entries the same way, but in secure storage. It implements `KeyValueStore`, so a secure store can be used where a general store is expected. The reverse is not allowed. Core gives each micro app its own instances of both stores, limited to its declared keys.
 

@@ -83,13 +83,13 @@ typedef InterModuleWidgetFactory =
       Map<String, Object?> parameters,
     );
 
-enum EndpointKind { data, widget }
+enum EndpointType { data, widget }
 
-/// Thrown when a URL is registered twice for the same [kind].
-final class DuplicateEndpointError extends Error {
-  DuplicateEndpointError({required String url, required EndpointKind kind});
+/// Thrown when a URL is registered twice for the same [type].
+final class DuplicateEndpointException implements Exception {
+  const DuplicateEndpointException({required String url, required EndpointType type});
   final String url;
-  final EndpointKind kind;
+  final EndpointType type;
 }
 
 /// Implemented by Core. Hosts and micro apps receive it through MicroAppContext.
@@ -97,7 +97,7 @@ abstract interface class InterModuleCommunication {
   /// Registers a data endpoint. Called by hosts (normally through
   /// registerProviders) after every micro app has initialized. Micro apps
   /// never call it directly (FR-047).
-  /// Throws DuplicateEndpointError if the URL is already registered as a data endpoint.
+  /// Throws DuplicateEndpointException if the URL is already registered as a data endpoint.
   void register({
     required InterModuleEndpoint endpoint,
     required InterModuleHandler handler,
@@ -109,7 +109,7 @@ abstract interface class InterModuleCommunication {
 
   /// Registers a UI endpoint. Called by hosts (normally through
   /// registerProviders) after every micro app has initialized.
-  /// Throws DuplicateEndpointError if the URL is already registered as a UI endpoint.
+  /// Throws DuplicateEndpointException if the URL is already registered as a UI endpoint.
   void registerWidget({
     required InterModuleEndpoint endpoint,
     required InterModuleWidgetFactory factory,
@@ -120,8 +120,8 @@ abstract interface class InterModuleCommunication {
     required InterModuleEndpoint endpoint,
   });
 
-  /// True if url is registered for kind. Never invokes a provider.
-  bool isRegistered({required String url, required EndpointKind kind});
+  /// True if url is registered for type. Never invokes a provider.
+  bool isRegistered({required String url, required EndpointType type});
 }
 
 /// A micro app's offer of one data endpoint. It is a class, so it can be
@@ -150,7 +150,7 @@ abstract interface class WidgetEndpointProvider {
 extension InterModuleProviderRegistration on InterModuleCommunication {
   /// Registers every provider: data providers through register(endpoint, handler: p.handle),
   /// and UI providers through registerWidget(endpoint, factory: p.build).
-  /// Stops at the first DuplicateEndpointError and lets it propagate.
+  /// Stops at the first DuplicateEndpointException and lets it propagate.
   void registerProviders({
     Iterable<DataEndpointProvider> data = const [],
     Iterable<WidgetEndpointProvider> widgets = const [],
@@ -164,7 +164,7 @@ The conformance check in [conformance.md](conformance.md) verifies each row.
 
 | # | Situation | `request` / `getWidget` outcome | Provider invoked? |
 |---|-----------|---------------------------------|-------------------|
-| B1 | URL not registered for this kind | `404`, `endpoint_not_registered`, `data == null` | — |
+| B1 | URL not registered for this type | `404`, `endpoint_not_registered`, `data == null` | — |
 | B2 | A provider-declared required parameter is absent | `400`, `missing_required_parameters`, `data == null` | No |
 | B3 | A provider-declared required parameter is `null` | Same as B2 | No |
 | B4 | A required parameter is `''` (empty string) | Whatever the provider returns | Yes |
@@ -173,10 +173,10 @@ The conformance check in [conformance.md](conformance.md) verifies each row.
 | B7 | The provider returns any response | Returned to the consumer unchanged (status, data, errorCode) | Yes |
 | B8 | The handler throws, or its future completes with an error | `500`, `data == null`, errorCode contains no exception detail | Yes |
 | B9 | The widget factory throws | `500`, `data == null` | Yes |
-| B10 | The same URL is registered twice for the same kind | The second `register`/`registerWidget` throws `DuplicateEndpointError` | — |
+| B10 | The same URL is registered twice for the same type | The second `register`/`registerWidget` throws `DuplicateEndpointException` | — |
 | B11 | The same URL is registered once as data and once as UI | Both work independently | Yes |
 | B12 | `getWidget` succeeds | Returns synchronously. `data` is the exact instance the factory created | Yes |
-| B13 | `isRegistered(url, kind)` | `true` only after that URL was registered for that kind. A URL registered as data is `false` for `widget`, and the other way round | Never |
+| B13 | `isRegistered(url, type)` | `true` only after that URL was registered for that type. A URL registered as data is `false` for `widget`, and the other way round | Never |
 | B14 | A call whose endpoint has a `traceName` | Timed. The name, duration, and resulting status (including 404 and 500) are recorded in the implementation's own diagnostics. A call without a `traceName` is not traced | Depends on B1–B12 |
 
 B14 is recorded inside the implementation, so the conformance check doesn't cover it. Core's own tests verify it.

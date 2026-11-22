@@ -18,6 +18,10 @@ description: "Task list for the Foundations package"
 - The test body is split into `// Given`, `// When`, and `// Then` sections.
 - Acceptance scenarios from spec.md keep their Given/When/Then wording.
 
+**Code conventions (required, user conventions)**:
+- Exceptions are named `…Exception`, `implements Exception`, and live in `lib/src/exceptions/` (one file each), for example `DuplicateEndpointException`.
+- Use "type" rather than "kind" for classifications the project introduces, for example `EndpointType`, `isRegistered({url, type})`, `ApiFailureType` with `ApiFailure.type`, and `StorageFailureType` with `StorageFailure.type`.
+
 **Organization**: Tasks are grouped by user story so each story can be built and tested on its own.
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -97,42 +101,42 @@ description: "Task list for the Foundations package"
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T017 [P] [US1] Write the endpoint value tests in `foundations/test/inter_module/inter_module_endpoint_test.dart`. Cover the defaults, value equality including content equality of maps and sets, and every field: data-model.md `InterModuleEndpoint.url`, `InterModuleEndpoint.parameters`, `InterModuleEndpoint.requiredParameters`, and `InterModuleEndpoint.traceName`.
-- [ ] T018 [P] [US1] Write the response tests in `foundations/test/inter_module/inter_module_response_test.dart`.
+- [X] T017 [P] [US1] Write the endpoint value tests in `foundations/test/inter_module/inter_module_endpoint_test.dart`. Cover the defaults, value equality including content equality of maps and sets, and every field: data-model.md `InterModuleEndpoint.url`, `InterModuleEndpoint.parameters`, `InterModuleEndpoint.requiredParameters`, and `InterModuleEndpoint.traceName`.
+- [X] T018 [P] [US1] Write the response tests in `foundations/test/inter_module/inter_module_response_test.dart`.
   - `isSuccess` at the boundaries: 199, 200, 299, and 300.
   - `.success` carries non-null `data`, and `.failure` asserts a status outside 2xx.
   - Cite data-model.md `InterModuleCommunicationResponse.statusCode`, `InterModuleCommunicationResponse.data`, `InterModuleCommunicationResponse.errorCode`, and `InterModuleCommunicationResponse.isSuccess`.
-- [ ] T019 [P] [US1] Write the status and error-code tests in `foundations/test/inter_module/inter_module_status_test.dart`. They assert the exact published values from the data-model.md "Shared error codes" table and the four status constants.
-- [ ] T020 [P] [US1] Write the data-provider tests in `foundations/test/inter_module/endpoint_provider_test.dart`:
+- [X] T019 [P] [US1] Write the status and error-code tests in `foundations/test/inter_module/inter_module_status_test.dart`. They assert the exact published values from the data-model.md "Shared error codes" table and the four status constants.
+- [X] T020 [P] [US1] Write the data-provider tests in `foundations/test/inter_module/endpoint_provider_test.dart`:
   - A sample `DataEndpointProvider` for `/module-b/v1/details` is exercised by calling `handle` directly, with no communication implementation (SC-014).
-  - Using a recording fake, `registerProviders(data: …)` calls `register` with each `endpoint` and passes `DuplicateEndpointError` through.
-- [ ] T021 [P] [US1] Write the conformance self-test in `foundations/test/testing/inter_module_conformance_test.dart`. It runs cases C01–C11 and C17 from contracts/conformance.md against the reference implementation, where every case must pass. It also runs them against each broken variant, where the case that targets that variant's defect must fail.
+  - Using a recording fake, `registerProviders(data: …)` calls `register` with each `endpoint` and passes `DuplicateEndpointException` through.
+- [X] T021 [P] [US1] Write the conformance self-test in `foundations/test/testing/inter_module_conformance_test.dart`. It runs cases C01–C11 and C17 from contracts/conformance.md against the reference implementation, where every case must pass. It also runs them against each broken variant, where the case that targets that variant's defect must fail.
 
 ### Implementation for User Story 1
 
-- [ ] T022 [P] [US1] Implement `InterModuleEndpoint` in `foundations/lib/src/inter_module/inter_module_endpoint.dart` per contracts/inter-module-communication.md. Cite data-model.md `InterModuleEndpoint.url`, `InterModuleEndpoint.parameters`, `InterModuleEndpoint.requiredParameters`, and `InterModuleEndpoint.traceName`.
-- [ ] T023 [P] [US1] Implement `InterModuleCommunicationResponse<T>` with `.success` and `.failure` in `foundations/lib/src/inter_module/inter_module_response.dart`. Cite data-model.md `InterModuleCommunicationResponse.statusCode`, `InterModuleCommunicationResponse.data`, `InterModuleCommunicationResponse.errorCode`, and `InterModuleCommunicationResponse.isSuccess`.
-- [ ] T024 [P] [US1] Implement `InterModuleStatusCode` and `InterModuleErrorCode` in `foundations/lib/src/inter_module/inter_module_status.dart`, following the data-model.md "Shared error codes" table.
-- [ ] T025 [US1] Implement the `InterModuleCommunication` interface in `foundations/lib/src/inter_module/inter_module_communication.dart`, with `register`, `request`, `registerWidget`, `getWidget`, and `isRegistered`, the `InterModuleHandler` and `InterModuleWidgetFactory` typedefs, and `EndpointKind`.
+- [X] T022 [P] [US1] Implement `InterModuleEndpoint` in `foundations/lib/src/inter_module/inter_module_endpoint.dart` per contracts/inter-module-communication.md. Cite data-model.md `InterModuleEndpoint.url`, `InterModuleEndpoint.parameters`, `InterModuleEndpoint.requiredParameters`, and `InterModuleEndpoint.traceName`.
+- [X] T023 [P] [US1] Implement `InterModuleCommunicationResponse<T>` with `.success` and `.failure` in `foundations/lib/src/inter_module/inter_module_response.dart`. Cite data-model.md `InterModuleCommunicationResponse.statusCode`, `InterModuleCommunicationResponse.data`, `InterModuleCommunicationResponse.errorCode`, and `InterModuleCommunicationResponse.isSuccess`.
+- [X] T024 [P] [US1] Implement `InterModuleStatusCode` and `InterModuleErrorCode` in `foundations/lib/src/inter_module/inter_module_status.dart`, following the data-model.md "Shared error codes" table.
+- [X] T025 [US1] Implement the `InterModuleCommunication` interface in `foundations/lib/src/inter_module/inter_module_communication.dart`, with `register`, `request`, `registerWidget`, `getWidget`, and `isRegistered`, the `InterModuleHandler` and `InterModuleWidgetFactory` typedefs, and `EndpointType`.
   - Document behavior rows B1–B14 from contracts/inter-module-communication.md, including that micro apps never call `register` directly.
-  - Cite data-model.md "Registration": `EndpointKind`, `InterModuleHandler`, and `InterModuleWidgetFactory`.
+  - Cite data-model.md "Registration": `EndpointType`, `InterModuleHandler`, and `InterModuleWidgetFactory`.
   - Depends on T022 and T023.
-- [ ] T026 [US1] Implement `DuplicateEndpointError` in `foundations/lib/src/inter_module/duplicate_endpoint_error.dart`. Cite data-model.md `DuplicateEndpointError.url` and `DuplicateEndpointError.kind`. Depends on T025.
-- [ ] T027 [US1] Implement `DataEndpointProvider`, `WidgetEndpointProvider`, and the `InterModuleProviderRegistration.registerProviders` extension in `foundations/lib/src/inter_module/endpoint_provider.dart`. Cite data-model.md `DataEndpointProvider.endpoint` and `WidgetEndpointProvider.endpoint`. Depends on T025 and T026.
-- [ ] T028 [US1] Create the reference implementation and the broken variants in `foundations/test/support/`:
+- [X] T026 [US1] Implement `DuplicateEndpointException` in `foundations/lib/src/exceptions/duplicate_endpoint_exception.dart`. Cite data-model.md `DuplicateEndpointException.url` and `DuplicateEndpointException.kind`. Depends on T025.
+- [X] T027 [US1] Implement `DataEndpointProvider`, `WidgetEndpointProvider`, and the `InterModuleProviderRegistration.registerProviders` extension in `foundations/lib/src/inter_module/endpoint_provider.dart`. Cite data-model.md `DataEndpointProvider.endpoint` and `WidgetEndpointProvider.endpoint`. Depends on T025 and T026.
+- [X] T028 [US1] Create the reference implementation and the broken variants in `foundations/test/support/`:
   - `foundations/test/support/reference_inter_module_communication.dart`: a correct, in-memory implementation of every contract behavior row, B1–B13 (B14 is implementation diagnostics).
   - `foundations/test/support/broken_inter_module_communications.dart`, with these variants: one ignores required parameters, one rethrows handler errors, one shares a single registry between kinds, one leaks exception text into `errorCode`, and one accepts duplicates.
   - Depends on T025–T027.
-- [ ] T029 [US1] Implement `ConformanceResult`, `ConformanceCase`, and `InterModuleConformance.cases`, with C01–C11 and C17, in `foundations/lib/src/testing/inter_module_conformance.dart` per contracts/conformance.md.
+- [X] T029 [US1] Implement `ConformanceResult`, `ConformanceCase`, and `InterModuleConformance.cases`, with C01–C11 and C17, in `foundations/lib/src/testing/inter_module_conformance.dart` per contracts/conformance.md.
   - Each run calls `create()` for a fresh implementation.
   - Cite data-model.md `ConformanceCase.id`, `ConformanceCase.description`, `ConformanceCase.run`, `ConformanceResult.passed`, and `ConformanceResult.message`.
   - Depends on T025 and T026.
-- [ ] T030 [US1] Export the inter-module files from `foundations/lib/foundations.dart`, and export the conformance file from `foundations/lib/testing.dart`, per contracts/public-surface.md. T017–T021 must pass.
-- [ ] T031 [US1] Build the example data demo in `foundations/example/lib/`:
+- [X] T030 [US1] Export the inter-module files from `foundations/lib/foundations.dart`, and export the conformance file from `foundations/lib/testing.dart`, per contracts/public-surface.md. T017–T021 must pass.
+- [X] T031 [US1] Build the example data demo in `foundations/example/lib/`:
   - `foundations/example/lib/example_inter_module_communication.dart`: an in-memory implementation.
   - `foundations/example/lib/module_b.dart`: the `/module-b/v1/details` provider. It returns 400 `invalid_id`, 404 `details_not_found`, 400 `unauthenticated` or `forbidden`, and 500 for a throw.
   - `foundations/example/lib/main.dart`: a Module A screen with one result row per data outcome in quickstart.md V4. It uses Material widgets for now; T081 restyles it.
-- [ ] T032 [US1] Write the example data tests in `foundations/example/test/inter_module_data_test.dart`. Run C01–C11 and C17 against the example implementation, plus every data row of the quickstart.md V4 table. In each, the consumer tells the outcome apart using only the status and the error code (SC-008).
+- [X] T032 [US1] Write the example data tests in `foundations/example/test/inter_module_data_test.dart`. Run C01–C11 and C17 against the example implementation, plus every data row of the quickstart.md V4 table. In each, the consumer tells the outcome apart using only the status and the error code (SC-008).
 
 **Checkpoint**: User Story 1 is the MVP. Teams can publish and consume data endpoints against any implementation that passes the conformance check.
 
@@ -150,8 +154,8 @@ description: "Task list for the Foundations package"
 - [ ] T034 [P] [US2] Write the API client tests in `foundations/test/capabilities/api_client_test.dart`:
   - The request defaults and equality.
   - Each `ApiClientShortcuts` method calls `send` with the right `ApiMethod`, `path`, `query`, `headers`, and `body` (using a recording fake).
-  - An exhaustive `switch` over `ApiFailureKind`.
-  - Cite data-model.md `ApiRequest.path`, `ApiRequest.body`, `ApiFailure.kind`, and `ApiResponse.statusCode`.
+  - An exhaustive `switch` over `ApiFailureType`.
+  - Cite data-model.md `ApiRequest.path`, `ApiRequest.body`, `ApiFailure.type`, and `ApiResponse.statusCode`.
 - [ ] T035 [P] [US2] Write the feature-flag tests in `foundations/test/capabilities/feature_flags_test.dart`:
   - The typed `BoolFlag`, `StringFlag`, and `NumberFlag` definitions.
   - A fake that returns the default for unknown flags and for flags of the wrong kind.
@@ -162,9 +166,9 @@ description: "Task list for the Foundations package"
 - [ ] T038 [P] [US2] Write the value-type tests in `foundations/test/capabilities/value_types_test.dart`:
   - An exhaustive `switch` over `SessionState`.
   - `UserIdentity` and `Permission` equality.
-  - Every `StorageFailureKind`, including `undeclaredKey`.
+  - Every `StorageFailureType`, including `undeclaredKey`.
   - Every `AppEnvironment` value.
-  - Cite data-model.md `UserIdentity.userId`, `Permission.name`, `StorageFailure.kind`, and `AppInfo.environment`.
+  - Cite data-model.md `UserIdentity.userId`, `Permission.name`, `StorageFailure.type`, and `AppInfo.environment`.
 - [ ] T039 [P] [US2] Create in-memory fakes for all eleven capabilities in `foundations/test/support/fakes.dart`, plus `foundations/test/capabilities/sample_feature_test.dart`, in which a sample feature that uses every capability runs with no device, network, or Core. Cover the US2 acceptance scenarios that Foundations can verify:
   - 1–2: the version comes from `AppInfo`, and the feature runs on fakes.
   - 4: no-op analytics, crash reporting, and logging don't change behavior.
@@ -179,16 +183,16 @@ description: "Task list for the Foundations package"
 
 - [ ] T040 [P] [US2] Implement `Result`, `Ok`, and `Err` in `foundations/lib/src/common/result.dart`, following data-model.md "Result<T, F>".
 - [ ] T041 [P] [US2] Implement `AppInfo` and `AppEnvironment` in `foundations/lib/src/capabilities/app_info.dart`. Cite data-model.md `AppInfo.appName`, `AppInfo.version`, `AppInfo.buildNumber`, and `AppInfo.environment`.
-- [ ] T042 [P] [US2] Implement `ApiMethod`, `ApiRequest`, `ApiResponse`, `ApiFailure`, `ApiFailureKind`, `ApiClient`, and `ApiClientShortcuts` in `foundations/lib/src/capabilities/api_client.dart`.
-  - Document the failure-kind mapping table, and that credentials are never exposed (FR-039).
-  - Cite data-model.md `ApiRequest.method`, `ApiRequest.path`, `ApiRequest.query`, `ApiRequest.headers`, `ApiRequest.body`, `ApiResponse.statusCode`, `ApiResponse.body`, `ApiResponse.headers`, `ApiFailure.kind`, `ApiFailure.statusCode`, and `ApiFailure.body`.
+- [ ] T042 [P] [US2] Implement `ApiMethod`, `ApiRequest`, `ApiResponse`, `ApiFailure`, `ApiFailureType`, `ApiClient`, and `ApiClientShortcuts` in `foundations/lib/src/capabilities/api_client.dart`.
+  - Document the failure-type mapping table, and that credentials are never exposed (FR-039).
+  - Cite data-model.md `ApiRequest.method`, `ApiRequest.path`, `ApiRequest.query`, `ApiRequest.headers`, `ApiRequest.body`, `ApiResponse.statusCode`, `ApiResponse.body`, `ApiResponse.headers`, `ApiFailure.type`, `ApiFailure.statusCode`, and `ApiFailure.body`.
 - [ ] T043 [P] [US2] Implement `Analytics` in `foundations/lib/src/capabilities/analytics.dart`. Cite data-model.md `Analytics event.name`, `Analytics event.properties`, `Screen view.screenName`, and `Screen view.properties`.
 - [ ] T044 [P] [US2] Implement `CrashReporter` in `foundations/lib/src/capabilities/crash_reporter.dart`. Cite data-model.md `Error report.error`, `Error report.stackTrace`, `Error report.reason`, and `Error report.context`, plus the pseudonymous user identifier rule.
 - [ ] T045 [P] [US2] Implement `AppLogger`, `LogLevel`, and `AppLoggerShortcuts` in `foundations/lib/src/capabilities/app_logger.dart`. Document the rule that log entries contain no credentials or personal data. Cite data-model.md `LogLevel`, `Log entry.level`, `Log entry.message`, and `Log entry.context`.
 - [ ] T046 [P] [US2] Implement `FeatureFlags` (with `valueOf` and `changes`) and the sealed `FeatureFlag`, `BoolFlag`, `StringFlag`, and `NumberFlag` in `foundations/lib/src/capabilities/feature_flags.dart`. Cite data-model.md `FeatureFlag.key` and `FeatureFlag.defaultValue`.
-- [ ] T047 [P] [US2] Implement `KeyValueStore`, `SecureKeyValueStore`, `StorageFailure`, and `StorageFailureKind` in `foundations/lib/src/capabilities/key_value_store.dart`.
+- [ ] T047 [P] [US2] Implement `KeyValueStore`, `SecureKeyValueStore`, `StorageFailure`, and `StorageFailureType` in `foundations/lib/src/capabilities/key_value_store.dart`.
   - Document that Core limits each micro app's stores to its declared keys.
-  - Cite data-model.md `Storage entry.key`, `Storage entry.value`, `StorageFailure.kind`, and `StorageFailure.key`.
+  - Cite data-model.md `Storage entry.key`, `Storage entry.value`, `StorageFailure.type`, and `StorageFailure.key`.
 - [ ] T048 [P] [US2] Implement `SessionContext`, `SessionState`, `Authenticated`, `Unauthenticated`, and `UserIdentity` in `foundations/lib/src/capabilities/session_context.dart`. Cite data-model.md `SessionState`, `UserIdentity.userId`, and `UserIdentity.displayName`, and the "Session" state transitions.
 - [ ] T049 [P] [US2] Implement `Permissions`, `Permission`, and an empty `SharedPermissions` in `foundations/lib/src/capabilities/permissions.dart`. Document the rule that a permission moves into Foundations once a second module needs it. Cite data-model.md `Permission.name`.
 - [ ] T050 [P] [US2] Implement `AppNavigator` (`open`, `go`, `close`) along with `NavigationResult`, `RouteCompleted`, `RouteCancelled`, `NavigationFailure`, `RouteNotFound`, and `RouteParametersMissing` in `foundations/lib/src/routing/app_navigator.dart`, per contracts/routing.md. Cite data-model.md "Route name", "Navigation parameters", and `NavigationResult.result`.
@@ -226,8 +230,8 @@ description: "Task list for the Foundations package"
   - The fixture builds a `MicroAppContext` with one contract missing.
   - Cite data-model.md "MicroAppContext", where all fields are required.
 - [ ] T055 [P] [US3] Write the reference-host tests in `foundations/test/micro_app/reference_host_test.dart`, covering US3 scenarios 1–9 and SC-016.
-  - Startup stops in each of these cases, with an error naming the culprit: a duplicate `id`; the same stored key declared by two micro apps (naming the key and both micro apps); a duplicate route name or full path; a duplicate provider URL (`DuplicateEndpointError`).
-  - Each micro app gets its own context, and its stores return `StorageFailureKind.undeclaredKey` for keys it didn't declare, leaving the other micro app's value untouched.
+  - Startup stops in each of these cases, with an error naming the culprit: a duplicate `id`; the same stored key declared by two micro apps (naming the key and both micro apps); a duplicate route name or full path; a duplicate provider URL (`DuplicateEndpointException`).
+  - Each micro app gets its own context, and its stores return `StorageFailureType.undeclaredKey` for keys it didn't declare, leaving the other micro app's value untouched.
   - Micro apps initialize in order. `isRegistered` is true for every declared provider after startup.
   - `dispose` runs in reverse order and continues after one teardown throws.
   - Cite data-model.md `MicroApp.storedKeys` and the "Stored key" entity.
@@ -246,7 +250,7 @@ description: "Task list for the Foundations package"
   - `foundations/test/support/reference_router.dart`: builds a go_router from route trees per the mapping table in contracts/routing.md, and implements `AppNavigator` on top of it.
   - Both are dev-only, and both serve as the reference for Core.
 - [ ] T062 [US3] Create the reference host and the sample micro apps in `foundations/test/support/`:
-  - `foundations/test/support/reference_host.dart`: host sequence steps 1–7 from contracts/micro-app.md, with fake stores limited to each micro app's declared keys (data-model.md "Stored key", `StorageFailure.kind`).
+  - `foundations/test/support/reference_host.dart`: host sequence steps 1–7 from contracts/micro-app.md, with fake stores limited to each micro app's declared keys (data-model.md "Stored key", `StorageFailure.type`).
   - `foundations/test/support/sample_micro_apps.dart`: sample Accounts and Transfers micro apps with `storedKeys`, an `accounts.details` route at `/accounts/details/:accountId`, a tab `MicroAppRouteGroup`, and providers.
   - T052–T056 must pass.
 

@@ -111,15 +111,15 @@ cd foundations && flutter test test/capabilities test/micro_app
   - It builds one context per micro app, whose fake stores are limited to that micro app's keys.
   - It initializes both micro apps.
   - It collects their route trees, localization delegates, and endpoint providers. It detects a duplicate route name and a duplicate full path.
-  - It registers every provider with one `registerProviders` call. A duplicate provider URL stops startup with `DuplicateEndpointError`.
+  - It registers every provider with one `registerProviders` call. A duplicate provider URL stops startup with `DuplicateEndpointException`.
   - It disposes both micro apps in reverse order, and keeps disposing after one teardown throws.
-- Accessing an undeclared key (for example Accounts writing `transfers.draft`) returns `Err(StorageFailure(kind: undeclaredKey))`, and Transfers' value is unchanged (SC-016).
-- After startup, `isRegistered` is `true` for each declared provider's URL and kind.
+- Accessing an undeclared key (for example Accounts writing `transfers.draft`) returns `Err(StorageFailure(type: undeclaredKey))`, and Transfers' value is unchanged (SC-016).
+- After startup, `isRegistered` is `true` for each declared provider's URL and type.
 - Each sample `DataEndpointProvider` and `WidgetEndpointProvider` is unit-tested by calling `handle` or `build` directly, with no communication implementation (SC-014).
 - `FeatureFlags.changes` emits on refresh, and a listener re-reads the new value.
 - `SessionContext` emits on sign-in, sign-out, and user switch. Reading the context while signed out yields `Unauthenticated`.
 - `FeatureFlags` returns the flag's default when the flag is unknown or has the wrong kind.
-- Every `ApiFailureKind` can be produced and matched exhaustively.
+- Every `ApiFailureType` can be produced and matched exhaustively.
 - Leaving a contract out of `MicroAppContext` does not compile. This is checked by an analyzer-expectation test.
 
 ```bash

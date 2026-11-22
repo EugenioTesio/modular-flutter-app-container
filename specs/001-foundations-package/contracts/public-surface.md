@@ -25,10 +25,10 @@ export 'src/inter_module/inter_module_response.dart';      // InterModuleCommuni
 export 'src/inter_module/inter_module_status.dart';        // InterModuleStatusCode, InterModuleErrorCode
 export 'src/inter_module/inter_module_value.dart';         // isInterModuleValue
 export 'src/inter_module/inter_module_communication.dart'; // InterModuleCommunication, InterModuleHandler,
-                                                           // InterModuleWidgetFactory, EndpointKind
+                                                           // InterModuleWidgetFactory, EndpointType
 export 'src/inter_module/endpoint_provider.dart';          // DataEndpointProvider, WidgetEndpointProvider,
                                                            // InterModuleProviderRegistration (registerProviders)
-export 'src/inter_module/duplicate_endpoint_error.dart';   // DuplicateEndpointError
+export 'src/exceptions/duplicate_endpoint_exception.dart';   // DuplicateEndpointException
 
 // Capabilities: see capabilities.md
 export 'src/capabilities/app_info.dart';

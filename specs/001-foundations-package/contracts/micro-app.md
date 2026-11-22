@@ -95,7 +95,7 @@ The App Shell and the standalone examples run the same sequence. Core provides t
 4. Collect from every micro app: routes, localizationsDelegates, dataEndpoints, widgetEndpoints.
    - Route names and full paths are checked (routing.md). A failure stops startup.
 5. communication.registerProviders(data: all dataEndpoints, widgets: all widgetEndpoints)
-   - A DuplicateEndpointError names the address, and startup stops.
+   - A DuplicateEndpointException names the address, and startup stops.
    - From here on, the set of endpoints is fixed.
 6. Core builds the router from the route trees, with sign-in guards based on SessionContext,
    and the localizations from the delegates.

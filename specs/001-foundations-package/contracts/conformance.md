@@ -40,12 +40,12 @@ abstract final class InterModuleConformance {
 | C08 | A provider-defined 404 passes through | B7 | 404 with the provider's own errorCode, such as `details_not_found` |
 | C09 | The handler throws synchronously | B8 | 500, data is null, and errorCode does not contain the exception text |
 | C10 | The handler's future completes with an error | B8 | Same as C09 |
-| C11 | Duplicate data registration | B10 | The second `register` throws `DuplicateEndpointError(kind: data)` |
+| C11 | Duplicate data registration | B10 | The second `register` throws `DuplicateEndpointException(type: data)` |
 | C12 | UI request succeeds synchronously | B12 | 200, `data` is the exact widget instance, returned without awaiting |
 | C13 | UI request with a required parameter absent or null | B2, B3 | 400, `missing_required_parameters`, the factory is not called |
 | C14 | UI endpoint not registered | B1 | 404, `endpoint_not_registered` |
 | C15 | The UI factory throws | B9 | 500, data is null |
-| C16 | Duplicate UI registration, and separate registries | B10, B11 | A second `registerWidget` throws `DuplicateEndpointError(kind: widget)`. Registering the same URL as data and as UI does not throw, and both work |
+| C16 | Duplicate UI registration, and separate registries | B10, B11 | A second `registerWidget` throws `DuplicateEndpointException(type: widget)`. Registering the same URL as data and as UI does not throw, and both work |
 | C17 | Registration check | B13 | `isRegistered` is `false` before registration. After a data registration it is `true` for `data` and still `false` for `widget`. It never invokes the provider |
 
 ## Usage (shown as documentation, not as an implementation)

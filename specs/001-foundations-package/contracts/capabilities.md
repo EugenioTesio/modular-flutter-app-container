@@ -46,17 +46,17 @@ final class ApiResponse {
   // fields: statusCode, body (decoded JSON), headers
 }
 
-enum ApiFailureKind { noConnectivity, timeout, unauthorized, clientError, serverError }
+enum ApiFailureType { noConnectivity, timeout, unauthorized, clientError, serverError }
 
 @immutable
 final class ApiFailure {
-  const ApiFailure({required ApiFailureKind kind, int? statusCode, Object? body});
-  // fields: kind, statusCode, body
+  const ApiFailure({required ApiFailureType type, int? statusCode, Object? body});
+  // fields: type, statusCode, body
 }
 
 abstract interface class ApiClient {
   /// Resolves path against the current environment's base address and attaches
-  /// the session's credentials. Never throws: every failure becomes an Err with one kind.
+  /// the session's credentials. Never throws: every failure becomes an Err with one type.
   Future<Result<ApiResponse, ApiFailure>> send(ApiRequest request);
 }
 
@@ -71,7 +71,7 @@ extension ApiClientShortcuts on ApiClient {
 
 Implementations must classify failures this way:
 
-| Condition | `ApiFailureKind` |
+| Condition | `ApiFailureType` |
 |-----------|------------------|
 | No connection or DNS failure | `noConnectivity` |
 | The deadline was exceeded | `timeout` |
@@ -160,14 +160,14 @@ There is no performance-tracing capability, by decision (FR-050). The only traci
 ```dart
 @immutable
 final class StorageFailure {
-  const StorageFailure({required StorageFailureKind kind, required String key});
+  const StorageFailure({required StorageFailureType type, required String key});
 }
 
-enum StorageFailureKind { unavailable, readFailed, writeFailed, deleteFailed, undeclaredKey }
+enum StorageFailureType { unavailable, readFailed, writeFailed, deleteFailed, undeclaredKey }
 
 /// General-purpose storage. Core gives each micro app its own instance, limited
 /// to the keys that micro app declares in MicroApp.storedKeys (FR-052). Any
-/// operation on another key returns Err(StorageFailure(kind: undeclaredKey)).
+/// operation on another key returns Err(StorageFailure(type: undeclaredKey)).
 /// Keys should follow '<microAppId>.<key>'. Declaring a key, not its prefix, is what reserves it.
 abstract interface class KeyValueStore {
   Future<Result<String?, StorageFailure>> read(String key);     // Ok(null) when the key is absent
