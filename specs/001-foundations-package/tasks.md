@@ -11,6 +11,13 @@ description: "Task list for the Foundations package"
 
 **Tests**: The spec asks for tests in FR-034, FR-017, FR-055, SC-003, SC-014, and SC-017, so every story phase starts with test tasks. Write them first, and make sure they fail before you implement.
 
+**Test notation (required, user convention)**: Every test is described in Gherkin notation.
+- A file starts with a `// Feature: …` comment that names the rule or story and its spec references.
+- `group('Given …')` holds the shared context.
+- Each `test('When …, Then …')` (or a single `test('Given …, When …, Then …')`) states one behavior.
+- The test body is split into `// Given`, `// When`, and `// Then` sections.
+- Acceptance scenarios from spec.md keep their Given/When/Then wording.
+
 **Organization**: Tasks are grouped by user story so each story can be built and tested on its own.
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -68,15 +75,15 @@ description: "Task list for the Foundations package"
 
 **⚠️ CRITICAL**: No user story work starts until this phase is complete.
 
-- [ ] T012 [P] Write the dependency allow-list test in `foundations/test/architecture/dependency_rules_test.dart`. It parses `foundations/pubspec.yaml` with `package:yaml` and asserts:
+- [X] T012 [P] Write the dependency allow-list test in `foundations/test/architecture/dependency_rules_test.dart`. It parses `foundations/pubspec.yaml` with `package:yaml` and asserts:
   - The runtime `dependencies` are a subset of `{flutter, design_system, switchable_state}`, and `switchable_state` is pinned exactly to `0.1.0`.
   - Every `switchable_state_*`, `flutter_riverpod`, `flutter_bloc`, `provider`, `get`, `mobx`, `flutter_mobx`, and `go_router` entry appears only under `dev_dependencies`.
 
   This covers FR-003, FR-043, FR-053, and SC-001.
-- [ ] T013 [P] Write the no-global-state scan in `foundations/test/architecture/no_global_state_test.dart`. It fails on any `static` field under `foundations/lib/` that is not `const`, and on any top-level `var` or `late` declaration (FR-016, SC-012).
-- [ ] T014 [P] Write the Design System package-rules test in `foundations/packages/design_system/test/architecture/package_rules_test.dart`. It asserts that the runtime dependencies are exactly `{flutter}` and that no file under `lib/` imports `package:foundations` (FR-056).
-- [ ] T015 [P] Write the payload-rule tests in `foundations/test/inter_module/inter_module_value_test.dart`. Cover the accepted and rejected values from the data-model.md "Shared rules → Payload rule": nested lists and maps, non-`String` map keys, and custom objects.
-- [ ] T016 Implement `isInterModuleValue(Object?)` in `foundations/lib/src/inter_module/inter_module_value.dart` per the data-model.md payload rule, and export it from `foundations/lib/foundations.dart`. T015 must pass.
+- [X] T013 [P] Write the no-global-state scan in `foundations/test/architecture/no_global_state_test.dart`. It fails on any `static` field under `foundations/lib/` that is not `const`, and on any top-level `var` or `late` declaration (FR-016, SC-012).
+- [X] T014 [P] Write the Design System package-rules test in `foundations/packages/design_system/test/architecture/package_rules_test.dart`. It asserts that the runtime dependencies are exactly `{flutter}` and that no file under `lib/` imports `package:foundations` (FR-056).
+- [X] T015 [P] Write the payload-rule tests in `foundations/test/inter_module/inter_module_value_test.dart`. Cover the accepted and rejected values from the data-model.md "Shared rules → Payload rule": nested lists and maps, non-`String` map keys, and custom objects.
+- [X] T016 Implement `isInterModuleValue(Object?)` in `foundations/lib/src/inter_module/inter_module_value.dart` per the data-model.md payload rule, and export it from `foundations/lib/foundations.dart`. T015 must pass.
 
 **Checkpoint**: The guardrails are in place, so story work can begin.
 

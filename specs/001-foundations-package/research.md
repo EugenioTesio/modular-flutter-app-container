@@ -235,6 +235,7 @@ The identity fields question was deferred during clarify.
     - Scan `lib/` for `static` fields that are not `const` and for top-level `var`/`late` declarations (SC-012).
   - Coverage: at least 90% line coverage of the concrete code in `lib/` (value types, extensions, conformance), using `flutter test --coverage`.
   - Documentation: `dart doc` must build with no warnings.
+  - Test notation (user convention, 2026-11-22): every test is written in Gherkin notation. Each file starts with a `// Feature:` comment, `group('Given …')` holds the context, each `test('When …, Then …')` states one behavior, and the body is split into `// Given`, `// When`, and `// Then` sections. Test names alone then read as a specification.
 - **Rationale**: These turn SC-001, SC-006, and SC-012 into automated checks instead of review-only rules.
 - **Alternatives considered**: `very_good_analysis`: a viable choice, but `flutter_lints` plus explicit additions keeps the rule set small and official.
 
