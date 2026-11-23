@@ -222,12 +222,12 @@ description: "Task list for the Foundations package"
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T052 [P] [US3] Write the route-tree validation tests in `foundations/test/routing/route_tree_validation_test.dart`.
+- [X] T052 [P] [US3] Write the route-tree validation tests in `foundations/test/routing/route_tree_validation_test.dart`.
   - Rejected: a duplicate full path, a top-level path without the `/<microAppId>` prefix, and a repeated path parameter.
   - Child paths join correctly.
   - The sign-in requirement is inherited from ancestors.
   - Cite data-model.md `MicroAppRoute.path`, `MicroAppRoute.requiresAuthentication`, `MicroAppRoute.routes`, and `MicroAppRouteGroup.routes`.
-- [ ] T053 [P] [US3] Write the reference-router tests in `foundations/test/routing/reference_router_test.dart`, following quickstart.md V10 and covering SC-015.
+- [X] T053 [P] [US3] Write the reference-router tests in `foundations/test/routing/reference_router_test.dart`, following quickstart.md V10 and covering SC-015.
   - The deep link `/accounts/details/42?tab=movements` and `push('/accounts/details/42?tab=movements', body: {...})` show the same screen; only the push delivers the body.
   - `Err(RouteNotFoundException)` is returned for a location that matches no route, and by `popUntil` for a path not in the stack.
   - Picker results come back as `Ok(RouteCompleted)` or `Ok(RouteCancelled)`, for both `push` and `replace`.
@@ -235,31 +235,31 @@ description: "Task list for the Foundations package"
   - A route that needs sign-in redirects while the user is `Unauthenticated`.
   - A `fullscreenDialog` route is presented as a full-screen dialog.
   - Moving between routes in a group keeps the group's layout and its `StateScope.group` state.
-- [ ] T054 [P] [US3] Write the context compile check in `foundations/test/micro_app/micro_app_context_test.dart`:
+- [X] T054 [P] [US3] Write the context compile check in `foundations/test/micro_app/micro_app_context_test.dart`:
   - `foundations/test/micro_app/micro_app_context_test.dart` runs `dart analyze` on `foundations/test/fixtures/missing_contract_fixture.dart` and expects a `missing_required_argument` error.
   - The fixture builds a `MicroAppContext` with one contract missing.
   - Cite data-model.md "MicroAppContext", where all fields are required.
-- [ ] T055 [P] [US3] Write the reference-host tests in `foundations/test/micro_app/reference_host_test.dart`, covering US3 scenarios 1–9 and SC-016.
+- [X] T055 [P] [US3] Write the reference-host tests in `foundations/test/micro_app/reference_host_test.dart`, covering US3 scenarios 1–9 and SC-016.
   - Startup stops in each of these cases, with an error naming the culprit: a duplicate `id`; the same stored key declared by two micro apps (naming the key and both micro apps); a duplicate full path; a duplicate provider URL (`DuplicateEndpointException`).
   - Each micro app gets its own context, and its stores return `StorageExceptionType.undeclaredKey` for keys it didn't declare, leaving the other micro app's value untouched.
   - Micro apps initialize in order. `isRegistered` is true for every declared provider after startup.
   - `dispose` runs in reverse order and continues after one teardown throws.
   - Cite data-model.md `MicroApp.storedKeys` and the "Stored key" entity.
-- [ ] T056 [P] [US3] Write the sample provider unit tests in `foundations/test/micro_app/sample_providers_test.dart`. They call each sample `DataEndpointProvider.handle` and `WidgetEndpointProvider.build` directly (SC-014).
+- [X] T056 [P] [US3] Write the sample provider unit tests in `foundations/test/micro_app/sample_providers_test.dart`. They call each sample `DataEndpointProvider.handle` and `WidgetEndpointProvider.build` directly (SC-014).
 
 ### Implementation for User Story 3
 
-- [ ] T057 [P] [US3] Implement `MicroAppRouteNode`, `MicroAppRoute`, `MicroAppRouteGroup`, `MicroAppRouteBuilder`, and `RoutePresentation` in `foundations/lib/src/routing/micro_app_route.dart`, per contracts/routing.md. Cite data-model.md `MicroAppRoute.path`, `MicroAppRoute.builder`, `MicroAppRoute.requiresAuthentication`, `MicroAppRoute.presentation`, `MicroAppRoute.routes`, `MicroAppRouteGroup.builder`, and `MicroAppRouteGroup.routes`.
-- [ ] T058 [P] [US3] Implement `MicroAppContext` in `foundations/lib/src/micro_app/micro_app_context.dart`, with all twelve required fields from the data-model.md "MicroAppContext" table: `MicroAppContext.communication`, `MicroAppContext.apiClient`, `MicroAppContext.analytics`, `MicroAppContext.crashReporter`, `MicroAppContext.logger`, `MicroAppContext.featureFlags`, `MicroAppContext.keyValueStore`, `MicroAppContext.secureKeyValueStore`, `MicroAppContext.navigator`, `MicroAppContext.session`, `MicroAppContext.devicePermissions`, and `MicroAppContext.appInfo`. Document that Core builds one per micro app, with storage limited to that micro app's keys.
-- [ ] T059 [US3] Implement the `MicroApp` interface in `foundations/lib/src/micro_app/micro_app.dart`, documenting the host sequence from contracts/micro-app.md.
+- [X] T057 [P] [US3] Implement `MicroAppRouteNode`, `MicroAppRoute`, `MicroAppRouteGroup`, `MicroAppRouteBuilder`, and `RoutePresentation` in `foundations/lib/src/routing/micro_app_route.dart`, per contracts/routing.md. Cite data-model.md `MicroAppRoute.path`, `MicroAppRoute.builder`, `MicroAppRoute.requiresAuthentication`, `MicroAppRoute.presentation`, `MicroAppRoute.routes`, `MicroAppRouteGroup.builder`, and `MicroAppRouteGroup.routes`.
+- [X] T058 [P] [US3] Implement `MicroAppContext` in `foundations/lib/src/micro_app/micro_app_context.dart`, with all twelve required fields from the data-model.md "MicroAppContext" table: `MicroAppContext.communication`, `MicroAppContext.apiClient`, `MicroAppContext.analytics`, `MicroAppContext.crashReporter`, `MicroAppContext.logger`, `MicroAppContext.featureFlags`, `MicroAppContext.keyValueStore`, `MicroAppContext.secureKeyValueStore`, `MicroAppContext.navigator`, `MicroAppContext.session`, `MicroAppContext.devicePermissions`, and `MicroAppContext.appInfo`. Document that Core builds one per micro app, with storage limited to that micro app's keys.
+- [X] T059 [US3] Implement the `MicroApp` interface in `foundations/lib/src/micro_app/micro_app.dart`, documenting the host sequence from contracts/micro-app.md.
   - Cite data-model.md `MicroApp.id`, `MicroApp.storedKeys`, `MicroApp.initialize`, `MicroApp.routes`, `MicroApp.localizationsDelegates`, `MicroApp.dataEndpoints`, `MicroApp.widgetEndpoints`, and `MicroApp.dispose`.
   - Depends on T057 and T058.
-- [ ] T060 [US3] Export the routing and micro app files from `foundations/lib/foundations.dart`, per contracts/public-surface.md.
-- [ ] T061 [US3] Create the reference routing support in `foundations/test/support/`:
+- [X] T060 [US3] Export the routing and micro app files from `foundations/lib/foundations.dart`, per contracts/public-surface.md.
+- [X] T061 [US3] Create the reference routing support in `foundations/test/support/`:
   - `foundations/test/support/reference_route_validation.dart`: the validation rules in contracts/routing.md, under "Startup checks".
   - `foundations/test/support/reference_router.dart`: builds a go_router from route trees per the mapping table in contracts/routing.md, and implements `AppNavigator` on top of it.
   - Both are dev-only, and both serve as the reference for Core.
-- [ ] T062 [US3] Create the reference host and the sample micro apps in `foundations/test/support/`:
+- [X] T062 [US3] Create the reference host and the sample micro apps in `foundations/test/support/`:
   - `foundations/test/support/reference_host.dart`: host sequence steps 1–7 from contracts/micro-app.md, with fake stores limited to each micro app's declared keys (data-model.md "Stored key", `StorageException.type`).
   - `foundations/test/support/sample_micro_apps.dart`: sample Accounts and Transfers micro apps with `storedKeys`, an `accounts.details` route at `/accounts/details/:accountId`, a tab `MicroAppRouteGroup`, and providers.
   - T052–T056 must pass.
