@@ -276,51 +276,51 @@ description: "Task list for the Foundations package"
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T063 [P] [US4] Write the token tests in `foundations/packages/design_system/test/tokens/ds_tokens_test.dart`.
+- [X] T063 [P] [US4] Write the token tests in `foundations/packages/design_system/test/tokens/ds_tokens_test.dart`.
   - The `DsSpacing` and `DsRadius` values.
   - Contrast ratios in both themes: every `DsColors` text role on its background reaches at least 4.5:1, `textOnAction` on `actionPrimary` reaches at least 4.5:1, and `actionPrimary` against `background` reaches at least 3:1.
   - Cite the data-model.md Design System rows "Primitive tokens" and "Semantic tokens".
-- [ ] T064 [P] [US4] Write the brand tests in `foundations/packages/design_system/test/theme/ds_brand_test.dart`.
+- [X] T064 [P] [US4] Write the brand tests in `foundations/packages/design_system/test/theme/ds_brand_test.dart`.
   - Changing `DsBrand.primary` changes the primary `DsButton` fill and the `focus` role, with no component change (D8).
   - A missing `fontFamily` falls back to the platform font.
   - Cite the data-model.md Design System row "Brand".
-- [ ] T065 [US4] Create the accessibility test harness in `foundations/packages/design_system/test/helpers/a11y_harness.dart`.
+- [X] T065 [US4] Create the accessibility test harness in `foundations/packages/design_system/test/helpers/a11y_harness.dart`.
   - It pumps a widget under both `DsTheme.light()` and `DsTheme.dark()`.
   - It runs `androidTapTargetGuideline`, `iOSTapTargetGuideline`, `labeledTapTargetGuideline`, and `textContrastGuideline` (D1–D3).
   - It also pumps at `TextScaler.linear(2.0)` on a 320-wide surface and asserts there is no overflow (D4).
-- [ ] T066 [P] [US4] Write the atom tests in `foundations/packages/design_system/test/components/`, using T065:
+- [X] T066 [P] [US4] Write the atom tests in `foundations/packages/design_system/test/components/`, using T065:
   - `foundations/packages/design_system/test/components/ds_button_test.dart`: variants, disabled, and loading (D1–D6, D8).
   - `foundations/packages/design_system/test/components/ds_text_field_test.dart`: label, helper, error, and disabled (D1–D5, D7).
   - `foundations/packages/design_system/test/components/ds_loading_indicator_test.dart`: D3, D4, and D6.
-- [ ] T067 [P] [US4] Write the molecule tests in `foundations/packages/design_system/test/components/`, using T065:
+- [X] T067 [P] [US4] Write the molecule tests in `foundations/packages/design_system/test/components/`, using T065:
   - `foundations/packages/design_system/test/components/ds_card_test.dart` and `ds_list_tile_test.dart`: D1–D4.
   - `ds_inline_message_test.dart`: D1–D4, and every tone mapped to its role pair (D9).
   - `ds_empty_state_test.dart`: D1–D4, with and without an action.
-- [ ] T068 [P] [US4] Write the template test in `foundations/packages/design_system/test/components/ds_page_scaffold_test.dart`: the title, the body padding of `DsSpacing.md`, a pinned full-width primary action, the back behavior, and D1–D4.
-- [ ] T069 [P] [US4] Write the state-management tests in `foundations/test/state_management/sample_state_test.dart`, following quickstart.md V9 and covering SC-013.
+- [X] T068 [P] [US4] Write the template test in `foundations/packages/design_system/test/components/ds_page_scaffold_test.dart`: the title, the body padding of `DsSpacing.md`, a pinned full-width primary action, the back behavior, and D1–D4.
+- [X] T069 [P] [US4] Write the state-management tests in `foundations/test/state_management/sample_state_test.dart`, following quickstart.md V9 and covering SC-013.
   - The sample widgets import only `package:foundations/foundations.dart`.
   - They declare an `AppState`, an `AppState.grouped` owned by a `StateScope.group`, and a `StateStoreOwner` store.
   - The same tests run under `RiverpodStateAdapter` and `CubitStateAdapter`, calling `pumpAndSettle` after writes, and `overrides` work under both.
-- [ ] T070 [P] [US4] Write the ambiguous-exports test in `foundations/test/architecture/ambiguous_exports_test.dart`. It imports `package:foundations/foundations.dart` and references one symbol each from Foundations, `design_system`, and `switchable_state`, so any name clash fails compilation (contracts/public-surface.md).
-- [ ] T071 [P] [US4] Write the re-export test in `foundations/example/test/design_system_reexport_test.dart`, following quickstart.md V6b. It imports only `package:foundations/foundations.dart` and builds a `DsPageScaffold` with a `DsTextField`, `DsButton`, and `DsListTile` under `DsTheme.light()`, reading `context.dsColors`.
+- [X] T070 [P] [US4] Write the ambiguous-exports test in `foundations/test/architecture/ambiguous_exports_test.dart`. It imports `package:foundations/foundations.dart` and references one symbol each from Foundations, `design_system`, and `switchable_state`, so any name clash fails compilation (contracts/public-surface.md).
+- [X] T071 [P] [US4] Write the re-export test in `foundations/example/test/design_system_reexport_test.dart`, following quickstart.md V6b. It imports only `package:foundations/foundations.dart` and builds a `DsPageScaffold` with a `DsTextField`, `DsButton`, and `DsListTile` under `DsTheme.light()`, reading `context.dsColors`.
 
 ### Implementation for User Story 4
 
-- [ ] T072 [P] [US4] Implement the primitive tokens in `foundations/packages/design_system/lib/src/tokens/ds_palette.dart`, `ds_spacing.dart`, and `ds_radius.dart`, per contracts/design-system.md. Cite the data-model.md Design System row "Primitive tokens".
-- [ ] T073 [US4] Implement the semantic tokens as `ThemeExtension`s with `copyWith` and `lerp`, in `foundations/packages/design_system/lib/src/tokens/ds_colors.dart` and `ds_typography.dart`. Cite the data-model.md Design System row "Semantic tokens". Depends on T072.
-- [ ] T074 [US4] Implement `DsBrand`, `DsTheme.light`, `DsTheme.dark`, and the `DsThemeContext` extension in `foundations/packages/design_system/lib/src/theme/ds_brand.dart`, `ds_theme.dart`, and `ds_theme_context.dart`.
+- [X] T072 [P] [US4] Implement the primitive tokens in `foundations/packages/design_system/lib/src/tokens/ds_palette.dart`, `ds_spacing.dart`, and `ds_radius.dart`, per contracts/design-system.md. Cite the data-model.md Design System row "Primitive tokens".
+- [X] T073 [US4] Implement the semantic tokens as `ThemeExtension`s with `copyWith` and `lerp`, in `foundations/packages/design_system/lib/src/tokens/ds_colors.dart` and `ds_typography.dart`. Cite the data-model.md Design System row "Semantic tokens". Depends on T072.
+- [X] T074 [US4] Implement `DsBrand`, `DsTheme.light`, `DsTheme.dark`, and the `DsThemeContext` extension in `foundations/packages/design_system/lib/src/theme/ds_brand.dart`, `ds_theme.dart`, and `ds_theme_context.dart`.
   - `textOnAction` is chosen so it meets 4.5:1 contrast on the brand color.
   - The Material component themes are aligned with the same roles.
   - Cite the data-model.md Design System rows "Brand" and "Themes".
   - Depends on T073.
-- [ ] T075 [P] [US4] Implement the atoms `DsButton`, `DsTextField`, and `DsLoadingIndicator` in `foundations/packages/design_system/lib/src/atoms/ds_button.dart`, `ds_text_field.dart`, and `ds_loading_indicator.dart`, per contracts/design-system.md. Cite the data-model.md Design System row "Atoms". Depends on T074.
-- [ ] T076 [P] [US4] Implement the molecules `DsCard`, `DsListTile`, `DsInlineMessage` (with `DsMessageTone`), and `DsEmptyState` in `foundations/packages/design_system/lib/src/molecules/ds_card.dart`, `ds_list_tile.dart`, `ds_inline_message.dart`, and `ds_empty_state.dart`. Cite the data-model.md Design System row "Molecules". Depends on T074.
-- [ ] T077 [P] [US4] Implement the template `DsPageScaffold` in `foundations/packages/design_system/lib/src/templates/ds_page_scaffold.dart`. Cite the data-model.md Design System row "Templates". Depends on T074 and T075.
-- [ ] T078 [US4] Export every token, theme, and component from `foundations/packages/design_system/lib/design_system.dart`, and add the 0.1.0 entry to `foundations/packages/design_system/CHANGELOG.md`. T063–T068 must pass.
-- [ ] T079 [US4] Build the Design System gallery in `foundations/packages/design_system/example/lib/main.dart`: every component in every state, with light/dark and brand toggles (quickstart.md V6d).
-- [ ] T080 [US4] Add `export 'package:design_system/design_system.dart';` and `export 'package:switchable_state/switchable_state.dart';` to `foundations/lib/foundations.dart`, with no `show`, `hide`, or renames (FR-002, FR-042). T069 and T070 must pass.
-- [ ] T081 [US4] Restyle the example screens in `foundations/example/lib/main.dart` and `foundations/example/lib/module_b.dart` with `Ds` components under `DsTheme.light()` and `DsTheme.dark()`, wrapped in a root `StateScope` whose adapter is chosen in `main.dart`. T071 must pass.
-- [ ] T082 [US4] Write the git-consumer smoke script `foundations/tool/git_consumer_smoke.sh`, following quickstart.md V6c and research R3.
+- [X] T075 [P] [US4] Implement the atoms `DsButton`, `DsTextField`, and `DsLoadingIndicator` in `foundations/packages/design_system/lib/src/atoms/ds_button.dart`, `ds_text_field.dart`, and `ds_loading_indicator.dart`, per contracts/design-system.md. Cite the data-model.md Design System row "Atoms". Depends on T074.
+- [X] T076 [P] [US4] Implement the molecules `DsCard`, `DsListTile`, `DsInlineMessage` (with `DsMessageTone`), and `DsEmptyState` in `foundations/packages/design_system/lib/src/molecules/ds_card.dart`, `ds_list_tile.dart`, `ds_inline_message.dart`, and `ds_empty_state.dart`. Cite the data-model.md Design System row "Molecules". Depends on T074.
+- [X] T077 [P] [US4] Implement the template `DsPageScaffold` in `foundations/packages/design_system/lib/src/templates/ds_page_scaffold.dart`. Cite the data-model.md Design System row "Templates". Depends on T074 and T075.
+- [X] T078 [US4] Export every token, theme, and component from `foundations/packages/design_system/lib/design_system.dart`, and add the 0.1.0 entry to `foundations/packages/design_system/CHANGELOG.md`. T063–T068 must pass.
+- [X] T079 [US4] Build the Design System gallery in `foundations/packages/design_system/example/lib/main.dart`: every component in every state, with light/dark and brand toggles (quickstart.md V6d).
+- [X] T080 [US4] Add `export 'package:design_system/design_system.dart';` and `export 'package:switchable_state/switchable_state.dart';` to `foundations/lib/foundations.dart`, with no `show`, `hide`, or renames (FR-002, FR-042). T069 and T070 must pass.
+- [X] T081 [US4] Restyle the example screens in `foundations/example/lib/main.dart` and `foundations/example/lib/module_b.dart` with `Ds` components under `DsTheme.light()` and `DsTheme.dark()`, wrapped in a root `StateScope` whose adapter is chosen in `main.dart`. T071 must pass.
+- [X] T082 [US4] Write the git-consumer smoke script `foundations/tool/git_consumer_smoke.sh`, following quickstart.md V6c and research R3.
   - It creates a temporary consumer that depends on Foundations through `git: {url: <local repo>, ref: HEAD}`, then runs `flutter pub get`.
   - It asserts that `design_system` resolves "from git … in packages/design_system" at the same commit as Foundations.
 
