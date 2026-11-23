@@ -39,13 +39,17 @@ export 'src/capabilities/app_logger.dart';
 export 'src/capabilities/feature_flags.dart';
 export 'src/capabilities/key_value_store.dart';
 export 'src/capabilities/session_context.dart';
-export 'src/capabilities/permissions.dart';
+export 'src/capabilities/device_permissions.dart';
 
 // Routing: see routing.md. AppNavigator and NavigationResult live with the route contract.
 export 'src/routing/micro_app_route.dart';     // MicroAppRouteNode, MicroAppRoute, MicroAppRouteGroup,
                                                // MicroAppRouteBuilder, RoutePresentation
-export 'src/routing/app_navigator.dart';       // AppNavigator, NavigationResult, RouteCompleted, RouteCancelled,
-                                               // NavigationFailure, RouteNotFound, RouteParametersMissing
+export 'src/routing/app_navigator.dart';       // AppNavigator, NavigationResult, RouteCompleted, RouteCancelled
+
+// Exceptions: every error type, one file each (sealed variants share their base's file)
+export 'src/exceptions/api_exception.dart';          // ApiException, ApiExceptionType
+export 'src/exceptions/storage_exception.dart';      // StorageException, StorageExceptionType
+export 'src/exceptions/navigation_exception.dart';   // NavigationException, RouteNotFoundException
 
 // Micro app integration: see micro-app.md
 export 'src/micro_app/micro_app.dart';
@@ -71,12 +75,12 @@ export 'src/testing/inter_module_conformance.dart'; // InterModuleConformance, C
 | No vendor type appears in any exported signature (FR-004) | Review, plus the dependency test: no vendor package is resolvable at runtime |
 | Exports from the Design System, `switchable_state`, and Foundations never collide | The compiler reports an `ambiguous_export` error. The architecture test imports `foundations.dart` and references one symbol from each of the three sources. |
 | No adapter package or state library is a runtime dependency (FR-043) | The dependency allow-list test (adapters appear only under `dev_dependencies`) |
-| Every exported member has a doc comment (FR-032) | The `public_member_api_docs` lint is on, and `flutter analyze` must report 0 issues |
+| Every exported member has a proper dartdoc comment (FR-032): a summary sentence, `[links]` that resolve, a ` ```dart ` example on each contract, and no spec IDs (see the root `CLAUDE.md`) | The `public_member_api_docs` and `comment_references` lints are on, `flutter analyze` must report 0 issues, and `dart doc --dry-run` must report no warnings |
 | No exported type has `static` mutable state (FR-016) | The architecture scan in `test/architecture/` |
 | Adding an export is a minor change. Removing or renaming one is a breaking change (FR-033) | `CHANGELOG.md` review in every release |
 
 ## Naming
 
-Capability names avoid clashes with Flutter SDK types that micro apps import alongside Foundations: `AppNavigator` and not `Navigator`, `AppLogger` and not `Logger`, `Permissions` and not `Permission` (which is the value type).
+Capability names avoid clashes with Flutter SDK types that micro apps import alongside Foundations: `AppNavigator` and not `Navigator`, `AppLogger` and not `Logger`. Names are also scoped to the feature they belong to, so they stay specific and never clash with plugin types: `AppInfoEnvironment`, `BoolFeatureFlag`, `DevicePermissions`, `DevicePermissionStatus`, and `LocationDevicePermission`, not `Environment`, `BoolFlag`, `Permissions`, `PermissionStatus`, or `LocationPermission`. Error types are named `…Exception`.
 
 They also avoid the names `switchable_state` exports: `AppState`, `StateScope`, `StateStore`, `StateAdapter`, `StateOverride`, `StateRegistry`, `StateStoreOwner`, `StateStoreUpdates`, and `closedStoreError`. For example, the session type is `SessionState`, not `AppState`.

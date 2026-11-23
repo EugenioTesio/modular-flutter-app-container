@@ -110,16 +110,16 @@ cd foundations && flutter test test/capabilities test/micro_app
   - It reads ids and `storedKeys`. Two micro apps declaring `session_cache` stop startup with an error naming the key and both micro apps.
   - It builds one context per micro app, whose fake stores are limited to that micro app's keys.
   - It initializes both micro apps.
-  - It collects their route trees, localization delegates, and endpoint providers. It detects a duplicate route name and a duplicate full path.
+  - It collects their route trees, localization delegates, and endpoint providers. It detects a duplicate full path.
   - It registers every provider with one `registerProviders` call. A duplicate provider URL stops startup with `DuplicateEndpointException`.
   - It disposes both micro apps in reverse order, and keeps disposing after one teardown throws.
-- Accessing an undeclared key (for example Accounts writing `transfers.draft`) returns `Err(StorageFailure(type: undeclaredKey))`, and Transfers' value is unchanged (SC-016).
+- Accessing an undeclared key (for example Accounts writing `transfers.draft`) returns `Err(StorageException(type: undeclaredKey))`, and Transfers' value is unchanged (SC-016).
 - After startup, `isRegistered` is `true` for each declared provider's URL and type.
 - Each sample `DataEndpointProvider` and `WidgetEndpointProvider` is unit-tested by calling `handle` or `build` directly, with no communication implementation (SC-014).
 - `FeatureFlags.changes` emits on refresh, and a listener re-reads the new value.
 - `SessionContext` emits on sign-in, sign-out, and user switch. Reading the context while signed out yields `Unauthenticated`.
 - `FeatureFlags` returns the flag's default when the flag is unknown or has the wrong kind.
-- Every `ApiFailureType` can be produced and matched exhaustively.
+- Every `ApiExceptionType` can be produced and matched exhaustively.
 - Leaving a contract out of `MicroAppContext` does not compile. This is checked by an analyzer-expectation test.
 
 ```bash
@@ -203,13 +203,13 @@ cd foundations && flutter test test/routing
 ```
 
 **Expected**:
-- Route-tree validation rejects a duplicate route name, a duplicate full path, a top-level path without the `/<microAppId>` prefix, and a repeated path parameter name.
+- Route-tree validation rejects a duplicate full path, a top-level path without the `/<microAppId>` prefix, and a repeated path parameter name.
 - A reference adapter in `test/support/` builds a go_router from the sample route trees. go_router is a dev dependency only.
-  - **Deep link**: the link `/accounts/details/42?tab=movements` shows the details screen with `{accountId: '42', tab: 'movements'}`.
-  - **Open by name**: `open('accounts.details', parameters: {'accountId': '42', 'tab': 'movements'})` shows the same screen.
-  - **Failures**: `open('accounts.details')` without `accountId` returns `RouteParametersMissing(missing: {'accountId'})`. `open('nope.screen')` returns `RouteNotFound`.
-  - **Results**: a picker opened with `open` and closed with `close(result: {...})` completes with `RouteCompleted(result)`. Closing without a result gives `RouteCancelled`.
-  - **Go**: `go('home.dashboard')` replaces the location and returns `null`.
+  - **Deep link**: the link `/accounts/details/42?tab=movements` shows the details screen with `{accountId: '42', tab: 'movements'}` and an empty body.
+  - **Push**: `push('/accounts/details/42?tab=movements', body: {'source': 'transfers'})` shows the same screen, which also receives the body.
+  - **Failures**: `push('/nope/screen')` returns `Err(RouteNotFoundException('/nope/screen'))`. `popUntil('/not/in/stack')` returns the same exception and closes nothing.
+  - **Results**: a picker opened with `push` (or `replace`) and closed with `pop(result: {...})` completes with `Ok(RouteCompleted(result))`. Closing without a result gives `Ok(RouteCancelled())`.
+  - **Go and popUntil**: `go('/home')` replaces the stack and returns `Ok`. After pushing two screens, `popUntil('/home')` closes both, and each opener completes with `RouteCancelled`.
   - **Sign-in**: a route that needs sign-in (directly or through an ancestor) redirects to sign-in while the fake session is `Unauthenticated`. A route with `requiresAuthentication: false` opens.
   - **Presentation**: a `fullscreenDialog` route is presented as a full-screen dialog.
   - **Groups**: moving between routes inside a `MicroAppRouteGroup` keeps the group's layout, and a `StateScope.group` placed in it keeps its state until the user leaves the group.

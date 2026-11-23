@@ -10,16 +10,20 @@ final class Ok<T, F> extends Result<T, F> { const Ok(this.value); final T value;
 final class Err<T, F> extends Result<T, F> { const Err(this.failure); final F failure; }
 ```
 
+Every error type a contract returns is named `…Exception`, `implements Exception`, and lives in `lib/src/exceptions/`: `ApiException`, `StorageException`, `NavigationException`, and `DuplicateEndpointException`. Contracts return them inside an `Err` rather than throwing them, except `DuplicateEndpointException`, which signals a wiring mistake at startup.
+
+Value equality uses Flutter's own `mapEquals` and `setEquals` for map and set fields (one level, by content). Every other field, including an `Object?` body, is compared with `==`. Foundations has no equality helper of its own (decision 2026-11-23).
+
 ## Application information (FR-019)
 
 ```dart
-enum AppEnvironment { development, staging, production }
+enum AppInfoEnvironment { development, staging, production }
 
 abstract interface class AppInfo {
   String get appName;
   String get version;        // e.g. '1.4.0'
   String get buildNumber;
-  AppEnvironment get environment;
+  AppInfoEnvironment get environment;
 }
 ```
 
@@ -33,11 +37,11 @@ final class ApiRequest {
   const ApiRequest({
     required ApiMethod method,
     required String path,                        // relative, starts with '/'
-    Map<String, String> query = const {},
+    Map<String, String> queryParams = const {},
     Map<String, String> headers = const {},      // credential headers are set by the implementation
     Object? body,                                // JSON-encodable
   });
-  // fields: method, path, query, headers, body
+  // fields: method, path, queryParams, headers, body
 }
 
 @immutable
@@ -46,38 +50,47 @@ final class ApiResponse {
   // fields: statusCode, body (decoded JSON), headers
 }
 
-enum ApiFailureType { noConnectivity, timeout, unauthorized, clientError, serverError }
+enum ApiExceptionType {
+  noConnectivity, timeout, badCertificate,          // the connection
+  unauthorized, clientError, serverError,           // the backend's answer
+  invalidRequest, invalidResponse, unknown,         // the API client itself
+}
 
+// lib/src/exceptions/api_exception.dart
 @immutable
-final class ApiFailure {
-  const ApiFailure({required ApiFailureType type, int? statusCode, Object? body});
+final class ApiException implements Exception {
+  const ApiException({required ApiExceptionType type, int? statusCode, Object? body});
   // fields: type, statusCode, body
 }
 
 abstract interface class ApiClient {
   /// Resolves path against the current environment's base address and attaches
   /// the session's credentials. Never throws: every failure becomes an Err with one type.
-  Future<Result<ApiResponse, ApiFailure>> send(ApiRequest request);
+  Future<Result<ApiResponse, ApiException>> send(ApiRequest request);
 }
 
 extension ApiClientShortcuts on ApiClient {
-  Future<Result<ApiResponse, ApiFailure>> get(String path, {Map<String, String> query, Map<String, String> headers});
-  Future<Result<ApiResponse, ApiFailure>> post(String path, {Object? body, Map<String, String> query, Map<String, String> headers});
-  Future<Result<ApiResponse, ApiFailure>> put(String path, {Object? body, Map<String, String> query, Map<String, String> headers});
-  Future<Result<ApiResponse, ApiFailure>> patch(String path, {Object? body, Map<String, String> query, Map<String, String> headers});
-  Future<Result<ApiResponse, ApiFailure>> delete(String path, {Map<String, String> query, Map<String, String> headers});
+  Future<Result<ApiResponse, ApiException>> get(String path, {Map<String, String> queryParams, Map<String, String> headers});
+  Future<Result<ApiResponse, ApiException>> post(String path, {Object? body, Map<String, String> queryParams, Map<String, String> headers});
+  Future<Result<ApiResponse, ApiException>> put(String path, {Object? body, Map<String, String> queryParams, Map<String, String> headers});
+  Future<Result<ApiResponse, ApiException>> patch(String path, {Object? body, Map<String, String> queryParams, Map<String, String> headers});
+  Future<Result<ApiResponse, ApiException>> delete(String path, {Map<String, String> queryParams, Map<String, String> headers});
 }
 ```
 
 Implementations must classify failures this way:
 
-| Condition | `ApiFailureType` |
+| Condition | `ApiExceptionType` |
 |-----------|------------------|
 | No connection or DNS failure | `noConnectivity` |
 | The deadline was exceeded | `timeout` |
+| The TLS handshake failed or the certificate was rejected (for example by pinning) | `badCertificate` |
 | HTTP 401 | `unauthorized` |
-| Any other HTTP 4xx | `clientError` |
-| HTTP 5xx, or a response that can't be decoded | `serverError` |
+| Any other HTTP 4xx | `clientError` (the `statusCode` and body are kept) |
+| HTTP 5xx | `serverError` (the `statusCode` and body are kept) |
+| The request could not be built or encoded (body not JSON-encodable, invalid path, query parameter, or header). No call reached the backend | `invalidRequest` |
+| The response could not be decoded (malformed JSON, unexpected content type, wrong shape) | `invalidResponse` (the `statusCode` is kept) |
+| Any other error raised inside the client | `unknown` |
 
 ## Analytics (FR-020)
 
@@ -137,9 +150,9 @@ sealed class FeatureFlag<T extends Object> {
   final String key;
   final T defaultValue;
 }
-final class BoolFlag extends FeatureFlag<bool> { const BoolFlag({required super.key, required super.defaultValue}); }
-final class StringFlag extends FeatureFlag<String> { const StringFlag({required super.key, required super.defaultValue}); }
-final class NumberFlag extends FeatureFlag<num> { const NumberFlag({required super.key, required super.defaultValue}); }
+final class BoolFeatureFlag extends FeatureFlag<bool> { const BoolFeatureFlag({required super.key, required super.defaultValue}); }
+final class StringFeatureFlag extends FeatureFlag<String> { const StringFeatureFlag({required super.key, required super.defaultValue}); }
+final class NumberFeatureFlag extends FeatureFlag<num> { const NumberFeatureFlag({required super.key, required super.defaultValue}); }
 
 abstract interface class FeatureFlags {
   /// Returns flag.defaultValue when the flag is unknown, has a value of the
@@ -158,22 +171,23 @@ There is no performance-tracing capability, by decision (FR-050). The only traci
 ## Storage (FR-022)
 
 ```dart
+// lib/src/exceptions/storage_exception.dart
 @immutable
-final class StorageFailure {
-  const StorageFailure({required StorageFailureType type, required String key});
+final class StorageException implements Exception {
+  const StorageException({required StorageExceptionType type, required String key});
 }
 
-enum StorageFailureType { unavailable, readFailed, writeFailed, deleteFailed, undeclaredKey }
+enum StorageExceptionType { unavailable, readFailed, writeFailed, deleteFailed, undeclaredKey }
 
 /// General-purpose storage. Core gives each micro app its own instance, limited
 /// to the keys that micro app declares in MicroApp.storedKeys (FR-052). Any
-/// operation on another key returns Err(StorageFailure(type: undeclaredKey)).
+/// operation on another key returns Err(StorageException(type: undeclaredKey)).
 /// Keys should follow '<microAppId>.<key>'. Declaring a key, not its prefix, is what reserves it.
 abstract interface class KeyValueStore {
-  Future<Result<String?, StorageFailure>> read(String key);     // Ok(null) when the key is absent
-  Future<Result<void, StorageFailure>> write(String key, String value);
-  Future<Result<void, StorageFailure>> delete(String key);
-  Future<Result<bool, StorageFailure>> containsKey(String key);
+  Future<Result<String?, StorageException>> read(String key);     // Ok(null) when the key is absent
+  Future<Result<void, StorageException>> write(String key, String value);
+  Future<Result<void, StorageException>> delete(String key);
+  Future<Result<bool, StorageException>> containsKey(String key);
 }
 
 /// Storage for sensitive values. It is limited to the same declared keys.
@@ -184,21 +198,32 @@ abstract interface class SecureKeyValueStore implements KeyValueStore {}
 ## Navigation (FR-023)
 
 `AppNavigator`, `NavigationResult`, and the route declarations it navigates to are defined in [routing.md](routing.md). In short:
-- `open(routeName, parameters)` returns `Future<NavigationResult>`, which is `RouteCompleted`, `RouteCancelled`, `RouteNotFound`, or `RouteParametersMissing`.
-- `go(routeName, parameters)` returns a `NavigationFailure?`.
-- `close(result)` closes the current screen.
+- `push(path, body)` and `replace(path, body)` return `Future<Result<NavigationResult, NavigationException>>`. The result is `RouteCompleted` or `RouteCancelled`, and the exception is `RouteNotFoundException`.
+- `go(path, body)` and `popUntil(path)` return `Result<void, NavigationException>`.
+- `pop(result)` closes the current screen.
 
-Route parameters are text, so every route is reachable by deep link.
+A `path` is a concrete location (`/accounts/details/a1?tab=history`), so every route is reachable by deep link. A `body` (`Map<String, Object>`) carries extra values that a deep link doesn't have.
 
 ## Session context (FR-024)
 
 ```dart
+/// Never holds credentials or tokens: Core keeps those and the API client
+/// attaches them (FR-039). email, phoneNumber, and customProperties are
+/// personal data: shown, never logged, tracked, or reported.
 @immutable
 final class UserIdentity {
-  const UserIdentity({required String userId, String? displayName});
+  const UserIdentity({
+    required String userId,
+    String? displayName,
+    String? email,
+    String? phoneNumber,
+    Map<String, Object?> customProperties = const {},   // payload rule; e.g. address, segment
+  });
+  // toString shows only userId
 }
 
 sealed class SessionState { const SessionState(); }
+/// Carries no session, access, or refresh tokens (FR-039).
 final class Authenticated extends SessionState {
   const Authenticated(this.identity);
   final UserIdentity identity;
@@ -211,25 +236,96 @@ abstract interface class SessionContext {
 }
 ```
 
-## Permissions (FR-025)
+Tokens stay in Core by decision (2026-11-23). If a micro app ever needs one, for example for a third-party SDK, it gets a narrow, explicit call added for that purpose, not a field on the session.
+
+## Device permissions (FR-025)
+
+Core implements this on top of the host's permission plugins, for example `permission_handler`, plus `geolocator` for location. Micro apps never import those plugins. Permissions that need extra options carry them as fields of their variant. Business entitlements, such as "may this user create a transfer", are not part of Foundations: each micro app handles them through its own backend (decision 2026-11-23).
 
 ```dart
 @immutable
-final class Permission {
-  const Permission(this.name);                 // '<microAppId>.<action>'
-  final String name;
-  // == and hashCode are based on name
+sealed class DevicePermission { const DevicePermission(); }   // == by type and options
+
+// Camera, microphone, and media
+final class CameraDevicePermission extends DevicePermission {}
+final class MicrophoneDevicePermission extends DevicePermission {}
+enum PhotosDevicePermissionAccess { readWrite, addOnly }               // addOnly: iOS
+final class PhotosDevicePermission extends DevicePermission { const PhotosDevicePermission({PhotosDevicePermissionAccess access = readWrite}); }
+final class VideosDevicePermission extends DevicePermission {}          // Android 13+
+final class AudioFilesDevicePermission extends DevicePermission {}      // Android 13+
+final class MediaLibraryDevicePermission extends DevicePermission {}    // iOS
+final class MediaLocationDevicePermission extends DevicePermission {}   // Android
+enum StorageDevicePermissionScope { shared, manageAll }
+final class StorageDevicePermission extends DevicePermission { const StorageDevicePermission({StorageDevicePermissionScope scope = shared}); } // Android
+
+// Personal information
+final class ContactsDevicePermission extends DevicePermission {}
+enum CalendarDevicePermissionAccess { full, writeOnly }
+final class CalendarDevicePermission extends DevicePermission { const CalendarDevicePermission({CalendarDevicePermissionAccess access = full}); }
+final class RemindersDevicePermission extends DevicePermission {}       // iOS
+final class SpeechRecognitionDevicePermission extends DevicePermission {}
+final class AssistantDevicePermission extends DevicePermission {}       // iOS (SiriKit)
+
+// Location and motion
+enum LocationDevicePermissionAccess { whileInUse, always }
+enum LocationDevicePermissionAccuracy { precise, approximate }
+final class LocationDevicePermission extends DevicePermission {
+  const LocationDevicePermission({
+    LocationDevicePermissionAccess access = whileInUse,
+    LocationDevicePermissionAccuracy accuracy = precise,
+    String? temporaryPrecisePurposeKey,                // iOS 14+ Info.plist purpose key
+  });
 }
+enum SensorsDevicePermissionAccess { whileInUse, always }
+final class SensorsDevicePermission extends DevicePermission { const SensorsDevicePermission({SensorsDevicePermissionAccess access = whileInUse}); }
+final class ActivityRecognitionDevicePermission extends DevicePermission {}
 
-/// Permissions that more than one module checks. Starts empty. A
-/// module-owned permission moves here when a second module needs it.
-abstract final class SharedPermissions {}
+// Connectivity
+enum BluetoothDevicePermissionAccess { scan, connect, advertise }
+final class BluetoothDevicePermission extends DevicePermission { const BluetoothDevicePermission({BluetoothDevicePermissionAccess access = connect}); }
+final class NearbyWifiDevicesDevicePermission extends DevicePermission {}  // Android 13+
+final class LocalNetworkDevicePermission extends DevicePermission {}       // iOS 14+
 
-abstract interface class Permissions {
-  bool has(Permission permission);
-  Stream<void> get changes;                    // emits whenever entitlements reload
+// Notifications
+final class NotificationsDevicePermission extends DevicePermission {}
+final class CriticalAlertsDevicePermission extends DevicePermission {}     // iOS
+final class NotificationPolicyDevicePermission extends DevicePermission {} // Android (Do Not Disturb)
+
+// Telephony (Android)
+final class PhoneDevicePermission extends DevicePermission {}
+final class SmsDevicePermission extends DevicePermission {}
+
+// Privacy and system
+final class AppTrackingDevicePermission extends DevicePermission {}               // iOS 14+
+final class BackgroundRefreshDevicePermission extends DevicePermission {}         // iOS, read only
+final class IgnoreBatteryOptimizationsDevicePermission extends DevicePermission {} // Android
+final class ScheduleExactAlarmDevicePermission extends DevicePermission {}        // Android 12+
+final class SystemAlertWindowDevicePermission extends DevicePermission {}         // Android
+final class InstallPackagesDevicePermission extends DevicePermission {}           // Android
+
+enum DevicePermissionStatus { granted, limited, provisional, denied, permanentlyDenied, restricted, unsupported }
+enum DevicePermissionServiceStatus { enabled, disabled, notApplicable }
+
+abstract interface class DevicePermissions {
+  /// Never prompts. On Android a permanently denied permission reports denied.
+  Future<DevicePermissionStatus> status(DevicePermission permission);
+
+  /// Prompts only when the system allows it. No prompt when the status is
+  /// granted, permanentlyDenied, restricted, or unsupported.
+  Future<DevicePermissionStatus> request(DevicePermission permission);
+
+  /// Whether the system service behind the permission (location, Bluetooth,
+  /// phone) is switched on. notApplicable for every other permission.
+  Future<DevicePermissionServiceStatus> serviceStatus(DevicePermission permission);
+
+  /// Opens the app's page in the system settings. Returns whether it opened.
+  Future<bool> openAppSettings();
 }
 ```
+
+The variants mirror the permissions `permission_handler` exposes (researched on 2026-11-23), with options where the plugin splits one capability into several permissions. A permission that exists on only one platform returns `unsupported` on the other, and the feature decides whether it can work without it. `permission_handler`'s `unknown` value and its deprecated `calendar` and `locationAlways`/`locationWhenInUse` constants are covered by the options above.
+
+Adding a variant (for example a permission a future platform version introduces) is a minor change for micro apps but needs a matching mapping in Core, because Core switches over `DevicePermission` exhaustively.
 
 ## Fakes and no-op implementations (FR-026, FR-027)
 

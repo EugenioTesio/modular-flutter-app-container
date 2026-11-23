@@ -9,7 +9,7 @@
 This plan builds `foundations`, the shared Flutter package that every micro app, Core, and every host depends on. It provides three things of its own:
 
 1. **Inter-module communication.** Endpoint, response, handler, UI-factory types and the communication interface, using the names from the reference article but without its global `instance` accessor. It also publishes the four statuses and the shared error codes.
-2. **Eleven capability contracts.** `AppInfo`, `ApiClient`, `Analytics`, `CrashReporter`, `AppLogger`, `FeatureFlags`, `KeyValueStore`, `SecureKeyValueStore`, `AppNavigator`, `SessionContext`, and `Permissions`. Each is an `abstract interface class`.
+2. **Eleven capability contracts.** `AppInfo`, `ApiClient`, `Analytics`, `CrashReporter`, `AppLogger`, `FeatureFlags`, `KeyValueStore`, `SecureKeyValueStore`, `AppNavigator`, `SessionContext`, and `DevicePermissions`. Each is an `abstract interface class`.
 3. **A uniform `MicroApp` integration contract.** It adapts the main idea of `flutter_enterprise_architecture` without tenants ([research R20](research.md#r20-adapting-flutter_enterprise_architecture)). A micro app receives its own `MicroAppContext`, whose storage is limited to its keys, and *declares*:
    - the storage keys it owns (`storedKeys`);
    - its routes, as a router-neutral route tree (names, URL paths, groups, presentation, and the sign-in requirement) that Core turns into the real router;
@@ -138,7 +138,10 @@ foundations/
 │       │   ├── inter_module_communication.dart
 │       │   └── endpoint_provider.dart         # DataEndpointProvider, WidgetEndpointProvider, registerProviders
 │       ├── exceptions/                    # every exception lives here (user convention)
-│       │   └── duplicate_endpoint_exception.dart
+│       │   ├── duplicate_endpoint_exception.dart
+│       │   ├── api_exception.dart             # ApiException, ApiExceptionType
+│       │   ├── storage_exception.dart         # StorageException, StorageExceptionType
+│       │   └── navigation_exception.dart      # sealed NavigationException, RouteNotFoundException
 │       ├── capabilities/
 │       │   ├── app_info.dart
 │       │   ├── api_client.dart
@@ -148,10 +151,10 @@ foundations/
 │       │   ├── feature_flags.dart
 │       │   ├── key_value_store.dart           # KeyValueStore + SecureKeyValueStore
 │       │   ├── session_context.dart
-│       │   └── permissions.dart
+│       │   └── device_permissions.dart        # DevicePermissions, DevicePermission variants, statuses
 │       ├── routing/
 │       │   ├── micro_app_route.dart           # MicroAppRouteNode, MicroAppRoute, MicroAppRouteGroup, RoutePresentation
-│       │   └── app_navigator.dart             # AppNavigator, NavigationResult, NavigationFailure
+│       │   └── app_navigator.dart             # AppNavigator (push/go/replace/pop/popUntil), NavigationResult
 │       ├── micro_app/
 │       │   ├── micro_app.dart                 # MicroApp (id, storedKeys, routes, providers, initialize, dispose)
 │       │   └── micro_app_context.dart
@@ -160,7 +163,7 @@ foundations/
 ├── test/
 │   ├── architecture/                # dependency rules, no global state, ambiguous exports
 │   ├── inter_module/                # endpoint, response, status, payload rule
-│   ├── capabilities/                # Result, flags, API failure kinds, navigation, session, permissions
+│   ├── capabilities/                # Result, flags, API exception types, navigation, session, device permissions
 │   ├── micro_app/                   # context construction; minimal reference host built only on the contracts:
 │   │                                #   storedKeys check → per-app scoped contexts → initialize → route checks
 │   │                                #   → registerProviders → dispose; provider unit tests
@@ -208,7 +211,7 @@ foundations/
 | `switchable_state` is new: 0.1.0 is its only release. | Breaking changes before 1.0 would become breaking Foundations releases (FR-045). | Pin exactly `0.1.0`, and upgrade only on purpose, with a changelog entry. Hosts choose an adapter version that accepts the pinned version. Core or the host runs `switchable_state_test` against its chosen adapter. |
 | The adapters pull in vendor libraries: `flutter_riverpod ^3.5.0`, `flutter_bloc ^9.1.1`, `provider ^6.1.5+1`, `get ^4.7.3`, and `mobx ^2.7.0` with `flutter_mobx ^2.4.0`. | A runtime adapter dependency would bring a vendor library into Foundations. | Adapters stay `dev_dependencies` in Foundations, used only for the SC-013 tests. All five adapters and `switchable_state_test` are on pub.dev at 0.1.0, accept `switchable_state ^0.1.0`, and need SDK `^3.13.0` and Flutter `>=3.47.0`, the same as Foundations (checked on 2026-11-20). |
 | The registration lifecycle (deferred in clarify). | Core's registries might accept late registrations. | Resolved by design: micro apps declare providers, and the host registers them once, after every `initialize` ([R8](research.md#r8-endpoint-registration-lifecycle)). Core rejects later `register` calls as a safety net, and its spec should say so. |
-| The reusable host assembly (the counterpart of `AppShellContainer`) must not be duplicated in the App Shell and every example. | Each host could drift in ordering, duplicate checks, or route guarding. | Assign it to Core's shared startup in Core's spec: check `storedKeys` and ids, build per-app scoped contexts, initialize, collect, check route names and paths, `registerProviders`, build the router from the route contract, guard routes, and dispose in reverse order. Foundations' tests include a minimal host that follows the same sequence and serves as the reference. |
+| The reusable host assembly (the counterpart of `AppShellContainer`) must not be duplicated in the App Shell and every example. | Each host could drift in ordering, duplicate checks, or route guarding. | Assign it to Core's shared startup in Core's spec: check `storedKeys` and ids, build per-app scoped contexts, initialize, collect, check full paths, `registerProviders`, build the router from the route contract, guard routes, and dispose in reverse order. Foundations' tests include a minimal host that follows the same sequence and serves as the reference. |
 
 ## Complexity Tracking
 

@@ -50,7 +50,7 @@
 - **Audience**: The package's users are developers, so the spec is necessarily technical. It describes contracts and outcomes, not code. Contract names (Inter-Module Endpoint, Inter-Module Response) and status values (200/400/404/500) come from the source article and are domain vocabulary, not implementation choices.
 - **Platform**: Flutter is named only in Assumptions, as the platform constraint the user gave. Requirements and success criteria stay framework-neutral and refer to "UI framework SDK" and "UI element".
 - **Assumptions to confirm** during `/speckit-clarify` if the team disagrees:
-  - The initial capability set (application information, analytics, crash reporting, storage, navigation, session context, permissions), with camera deferred.
-  - "Permissions" means user entitlements, not OS device permissions.
+  - The initial capability set (application information, analytics, crash reporting, storage, navigation, session context, device permissions).
+  - "Permissions" means OS device permissions (revised 2026-11-23). Business entitlements are left to each micro app.
   - Foundations ships a communication conformance check but no ready-made fakes.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`.

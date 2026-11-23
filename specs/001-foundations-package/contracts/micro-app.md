@@ -40,7 +40,7 @@ final class MicroAppContext {
     required SecureKeyValueStore secureKeyValueStore,
     required AppNavigator navigator,
     required SessionContext session,
-    required Permissions permissions,
+    required DevicePermissions devicePermissions,
     required AppInfo appInfo,
   });
   // One final field per parameter. Identity equality (it is a bundle of services, not a value).
@@ -93,7 +93,7 @@ The App Shell and the standalone examples run the same sequence. Core provides t
    - Shared services, plus storage limited to that micro app's storedKeys.
 3. For each micro app, in a fixed order:   await microApp.initialize(itsContext)
 4. Collect from every micro app: routes, localizationsDelegates, dataEndpoints, widgetEndpoints.
-   - Route names and full paths are checked (routing.md). A failure stops startup.
+   - Full paths are checked (routing.md). A failure stops startup.
 5. communication.registerProviders(data: all dataEndpoints, widgets: all widgetEndpoints)
    - A DuplicateEndpointException names the address, and startup stops.
    - From here on, the set of endpoints is fixed.

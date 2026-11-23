@@ -82,8 +82,8 @@ This decision was revised on 2026-11-21. The `design-system` repository is still
 
 - **Decision**:
   - Use one shared `sealed class Result<T, F>` with `Ok<T, F>(value)` and `Err<T, F>(failure)` for capability operations that can fail: the API client and storage.
-  - Each capability has its own failure type: `ApiFailure` with `ApiFailureType`, and `StorageFailure`.
-  - Navigation uses its own sealed `NavigationResult` (`RouteCompleted`, `RouteCancelled`, `RouteNotFound`), because "cancelled" is a normal ending, not a failure.
+  - Each capability has its own exception type: `ApiException` with `ApiExceptionType`, `StorageException` with `StorageExceptionType`, and `NavigationException` (`RouteNotFoundException`). All are named `…Exception`, `implements Exception`, and live in `lib/src/exceptions/` (user convention, 2026-11-22/23).
+  - Navigation returns `Result<NavigationResult, NavigationException>`. `NavigationResult` (`RouteCompleted`, `RouteCancelled`) is separate from the exception because "cancelled" is a normal ending, not a failure.
 - **Rationale**:
   - Explicit, exhaustive outcomes satisfy FR-028 without exceptions crossing the contract.
   - Vendor exceptions stay inside Core's adapters.
@@ -94,7 +94,7 @@ This decision was revised on 2026-11-21. The `design-system` repository is still
 
 ## R7. Delivering contracts without globals
 
-- **Decision**: `MicroAppContext` is an `@immutable final class` with one **required** field for each contract: `communication`, `apiClient`, `analytics`, `crashReporter`, `logger`, `featureFlags`, `keyValueStore`, `secureKeyValueStore`, `navigator`, `session`, `permissions`, `appInfo`. Core's initialization builds it, and the host passes it to `MicroApp.initialize(context)`. Each micro app decides how to make the context available to its own UI. Foundations declares no `static` mutable fields and no top-level variables.
+- **Decision**: `MicroAppContext` is an `@immutable final class` with one **required** field for each contract: `communication`, `apiClient`, `analytics`, `crashReporter`, `logger`, `featureFlags`, `keyValueStore`, `secureKeyValueStore`, `navigator`, `session`, `devicePermissions`, `appInfo`. Core's initialization builds it, and the host passes it to `MicroApp.initialize(context)`. Each micro app decides how to make the context available to its own UI. Foundations declares no `static` mutable fields and no top-level variables.
 - **One context per micro app** (2026-11-21): Core builds a separate `MicroAppContext` for each micro app. All services are shared except the two stores, which are limited to that micro app's `storedKeys` ([R12](#r12-storage)). Internal dependencies are built in `initialize`, and overrides go through the micro app's constructor. The user confirmed this instead of the earlier package's `registerDependencies`.
 - **State inside micro apps**: Each micro app keeps its own state in stores from the re-exported `switchable_state` contract ([R19](#r19-state-management-contract-switchable_state)). How it passes the `MicroAppContext` to its widgets (through constructors or a scope it owns) is still the micro app's choice.
 - **Rationale**:
@@ -131,19 +131,23 @@ This question was deferred during clarify.
 ## R10. API client contract
 
 - **Decision**:
-  - The contract has one core operation, `Future<Result<ApiResponse, ApiFailure>> send(ApiRequest request)`. `get/post/put/patch/delete` are extension methods on top of it.
-  - `ApiRequest` holds `method`, `path` (relative, starting with `/`), `query`, `headers`, and a JSON-encodable `body`.
+  - The contract has one core operation, `Future<Result<ApiResponse, ApiException>> send(ApiRequest request)`. `get/post/put/patch/delete` are extension methods on top of it.
+  - `ApiRequest` holds `method`, `path` (relative, starting with `/`), `queryParams`, `headers`, and a JSON-encodable `body`.
   - `ApiResponse` holds `statusCode`, the decoded JSON `body`, and `headers`.
   - Implementations attach credentials and resolve the base address for the environment. Micro apps never see either (FR-039).
   - Failures map like this:
 
-| Condition | `ApiFailureType` |
+| Condition | `ApiExceptionType` |
 |-----------|------------------|
 | No connection or DNS failure | `noConnectivity` |
 | The deadline was exceeded | `timeout` |
+| The TLS handshake failed or the certificate was rejected (for example by pinning) | `badCertificate` |
 | HTTP 401 | `unauthorized` |
 | Any other HTTP 4xx | `clientError` (the `statusCode` and body are kept) |
-| HTTP 5xx, or a response that can't be decoded | `serverError` |
+| HTTP 5xx | `serverError` (the `statusCode` and body are kept) |
+| The request could not be built or encoded (body not JSON-encodable, invalid path, query parameter, or header). No call reached the backend | `invalidRequest` |
+| The response could not be decoded (malformed JSON, unexpected content type, wrong shape) | `invalidResponse` (the `statusCode` is kept) |
+| Any other error raised inside the client | `unknown` |
 
   - The first release is JSON only. Binary and multipart bodies are deferred.
 - **Rationale**: One operation keeps fakes trivial to write. The table makes "exactly one category" (FR-039) testable.
@@ -152,7 +156,7 @@ This question was deferred during clarify.
 ## R11. Feature flags
 
 - **Decision**:
-  - A flag is defined once as a typed object that carries its own default: `sealed class FeatureFlag<T>` with `BoolFlag`, `StringFlag`, and `NumberFlag` (`const` constructors take `key` and `defaultValue`).
+  - A flag is defined once as a typed object that carries its own default: `sealed class FeatureFlag<T>` with `BoolFeatureFlag`, `StringFeatureFlag`, and `NumberFeatureFlag` (`const` constructors take `key` and `defaultValue`).
   - The contract is `T valueOf<T extends Object>(FeatureFlag<T> flag)`. Implementations return the default when the flag is unknown, has the wrong kind, or the provider is unavailable (FR-040).
   - `Stream<void> get changes` emits after each refresh (FR-051, from `RemoteConfigController` in [R20](#r20-adapting-flutter_enterprise_architecture)). It carries no payload, so consumers re-read typed flags and never handle raw config maps.
   - Keys follow `<microAppId>.<flag_name>`.
@@ -162,12 +166,12 @@ This question was deferred during clarify.
 ## R12. Storage
 
 - **Decision**:
-  - `KeyValueStore` exposes `read`, `write`, `delete`, and `containsKey`. Values are `String`, and every operation returns `Future<Result<…, StorageFailure>>`.
+  - `KeyValueStore` exposes `read`, `write`, `delete`, and `containsKey`. Values are `String`, and every operation returns `Future<Result<…, StorageException>>`.
   - `SecureKeyValueStore` is a separate interface with the same members (`implements KeyValueStore`), so the type system tells the two apart and secure storage can be passed wherever general storage is expected, but not the other way round.
   - Revised on 2026-11-21, from the user's stored-keys idea:
     - Every micro app declares its keys in `MicroApp.storedKeys`, which the host reads before `initialize`.
     - The host stops startup if two micro apps declare the same key.
-    - Core builds each micro app's `KeyValueStore` and `SecureKeyValueStore` limited to its declared keys. Any operation on another key returns `Err(StorageFailure(type: undeclaredKey))`.
+    - Core builds each micro app's `KeyValueStore` and `SecureKeyValueStore` limited to its declared keys. Any operation on another key returns `Err(StorageException(type: undeclaredKey))`.
     - Keys *should* follow `<microAppId>.<key>`, but it is the declaration that reserves a key. Legacy keys such as `auth_token` can be declared as they are.
 - **Rationale**:
   - String values match what secure-storage vendors support and keep the contract vendor-neutral. Each micro app serializes its own models (FR-005).
@@ -184,47 +188,49 @@ The identity fields question was deferred during clarify.
 - **Decision**:
   - `SessionContext` exposes `SessionState get current` and `Stream<SessionState> get changes`.
   - `sealed class SessionState` has `Authenticated(UserIdentity identity)` and `Unauthenticated()`.
-  - `UserIdentity` holds only `userId` (an opaque `String`) and an optional `displayName`.
-  - Fields can be added later, as optional fields, in compatible releases.
-- **Rationale**: This is the smallest set the current micro apps need. It never exposes tokens, which matches FR-039: credentials stay inside the API client implementation.
-- **Alternatives considered**: Exposing a token or claims map: rejected for security reasons and because it is free-form.
+  - `UserIdentity` holds `userId` (an opaque `String`) and the optional `displayName`, `email`, `phoneNumber`, and `customProperties` (a payload-rule map for anything else, such as an address). Revised 2026-11-23 at the user's request.
+  - `Authenticated` carries the identity only. Session, access, and refresh tokens stay in Core (user decision, 2026-11-23).
+  - Further fields can be added later, as optional fields, in compatible releases.
+- **Rationale**: Micro apps get the profile data they show without a backend call of their own. Tokens are never exposed, which matches FR-039: credentials stay inside the API client implementation, so no micro app can log or leak them. If a micro app ever needs a token (for example for a third-party SDK), a narrow, explicit call is added for that purpose.
+- **Alternatives considered**: Exposing tokens on `Authenticated`: rejected by the user on 2026-11-23 for the reason above. `toString` prints only `userId`, so printing an identity never leaks personal data.
 
-## R14. Permissions
+## R14. Device permissions
 
-- **Decision**:
-  - `@immutable final class Permission` with a `const Permission(this.name)` constructor and value equality. Names follow `<microAppId>.<action>`.
-  - The contract is `bool has(Permission permission)` plus `Stream<void> get changes`. Permissions follow the session, so the stream emits whenever entitlements reload.
-  - `abstract final class SharedPermissions` holds the `static const` permissions that more than one module checks. It starts empty, and a permission moves in when a second module needs it (FR-025).
-  - Permissions used by only one module are declared as `const` values inside that micro app.
-- **Rationale**: Callers use constants, not text typed at each call site (FR-025). Answering synchronously keeps UI checks simple. Session changes trigger re-reads through `changes`.
+- **Decision** (revised on 2026-11-23: the user expected a `permission_handler`-style wrapper, with room for options such as `geolocator`'s; business entitlements are removed from Foundations):
+  - `DevicePermissions` has `status(permission)` (never prompts), `request(permission)` (prompts only when the system allows), `serviceStatus(permission)`, and `openAppSettings()`.
+  - `DevicePermission` is `sealed`, with one variant for each permission `permission_handler` exposes (about 30; researched on its API reference on 2026-11-23). Where the plugin splits one capability into several permissions, a single variant carries an option instead: photos (`readWrite`/`addOnly`), storage (`shared`/`manageAll`), calendar (`full`/`writeOnly`), location (`whileInUse`/`always`, `precise`/`approximate`, and the iOS temporary-precise purpose key that `geolocator.requestTemporaryFullAccuracy` needs), sensors (`whileInUse`/`always`), and Bluetooth (`scan`/`connect`/`advertise`).
+  - `DevicePermissionStatus` mirrors the plugin's statuses (`granted`, `limited`, `provisional`, `denied`, `permanentlyDenied`, `restricted`) and adds `unsupported` for a permission the current platform doesn't have.
+  - `DevicePermissionServiceStatus` (`enabled`, `disabled`, `notApplicable`) mirrors the plugin's service status, because a granted location permission is useless while location services are off.
+  - Findings that shape the docs: on Android, a status check can't tell `permanentlyDenied` from `denied` (only a request can); background location is granted only after while-in-use location; shared storage is always denied on Android 13+.
+  - Names carry the `DevicePermission` suffix, so they are scoped to this capability and never clash with plugin types (`Permission`, `PermissionStatus`, `LocationPermission`).
+- **Rationale**: Micro apps request device access without importing a plugin, and Core can swap plugins without any micro app changing (SC-005). A sealed type with per-variant options handles plugins that need extra parameters, which a flat enum can't. Core's exhaustive switch makes a forgotten mapping a compile error.
 - **Alternatives considered**:
-  - A closed enum in Foundations: rejected because every module-only permission would need a Foundations release, which the clarify session ruled out.
-  - Dart extension types: rejected because an `as` cast can bypass them.
+  - A flat enum plus an options map: rejected because options become untyped.
+  - Keeping business entitlements alongside device permissions: rejected by the user; each micro app handles entitlements itself.
 
 ## R15. Navigation
 
-- **Decision** (revised on 2026-11-21: "Foundations provides a route contract that Core uses to create the implementation"):
+- **Decision** (revised on 2026-11-21: "Foundations provides a route contract that Core uses to create the implementation"; revised again on 2026-11-23: navigation by path with push, go, replace, pop, and popUntil, and a body):
   - **Route contract** ([contracts/routing.md](contracts/routing.md)):
-    - The sealed `MicroAppRouteNode` has two node types: `MicroAppRoute` (`name`, `path` pattern with `:param` segments, `builder`, `requiresAuthentication`, `presentation`, and child `routes`) and `MicroAppRouteGroup` (a shared layout `builder` and its `routes`).
+    - The sealed `MicroAppRouteNode` has two node types: `MicroAppRoute` (`path` pattern with `:param` segments, `builder`, `requiresAuthentication`, `presentation`, and child `routes`) and `MicroAppRouteGroup` (a shared layout `builder` and its `routes`). Routes have no name.
     - Core builds the real router from these nodes. For go_router, a route becomes `GoRoute` and a group becomes `ShellRoute`.
   - **Navigation**:
-    - `AppNavigator.open(routeName, {Map<String, String> parameters})` returns `Future<NavigationResult>`.
-    - `go(routeName, …)` returns `NavigationFailure?`.
-    - `close({result})` closes the current screen.
-  - **Naming**: route names are `<microAppId>.<screen>`. Paths are URLs, absolute at the top level and relative when nested.
-  - **Parameters are text**: path parameters plus query parameters, so every route is deep-linkable.
-  - **Outcomes**: `NavigationResult` is `RouteCompleted(result)`, `RouteCancelled()`, or a sealed `NavigationFailure` (`RouteNotFound`, `RouteParametersMissing`).
-  - **Results**: result maps still follow the inter-module payload rule.
+    - `push(path, {body})` and `replace(path, {body})` return `Future<Result<NavigationResult, NavigationException>>`.
+    - `go(path, {body})` and `popUntil(path)` return `Result<void, NavigationException>`.
+    - `pop({result})` closes the current screen.
+  - **Paths**: a concrete location such as `/accounts/details/a1?tab=history`. Route patterns are absolute at the top level and relative when nested. A full path another micro app navigates to is part of the owning micro app's public surface.
+  - **Body**: `Map<String, Object>` of extra values. Across micro apps it follows the payload rule, and it is empty after a deep link.
+  - **Outcomes**: `NavigationResult` is `RouteCompleted(result)` or `RouteCancelled()`. `NavigationException` is sealed, with `RouteNotFoundException(path)`. A missing path parameter can't be detected separately, because the path is already a concrete location: it simply matches no route.
 - **Rationale**:
   - The route contract is complete enough for Core to build any router, with nested routes, shell routes, presentation, guards, and deep links, while micro apps never import a router package (SC-015).
-  - Navigating by name keeps callers stable when paths change, and paths serve deep links.
-  - Text parameters are what URLs can carry, so any screen opened in-app can also be opened from a link or a push notification.
+  - Push, go, replace, pop, and popUntil are the operations developers know from go_router and Navigator, so the contract reads naturally (user decision).
+  - A path is both the in-app address and the deep link, so there's one identifier per screen. The body covers values a URL can't carry.
+  - Returning `Result` matches the API client and storage, so every capability reports failures the same way.
   - Groups give `switchable_state`'s `StateScope.group` a natural home.
 - **Alternatives considered**:
   - Routes typed by the router (`MicroApp<GoRoute>`, as in the earlier package): rejected because micro apps would depend on the router vendor.
-  - Navigating by path string: rejected because callers break when paths change.
-  - `Map<String, Object?>` parameters (the earlier decision): rejected because objects can't survive a deep link.
-  - Typed route objects shared through Foundations: rejected because they would pull feature models into Foundations (FR-005).
+  - Navigating by route name (the 2026-11-21 design): replaced at the user's request. Trade-off: callers depend on paths, so changing a public path is a breaking change.
+  - Text-only parameters: replaced by path plus body, at the user's request. Screens must handle a missing body after a deep link.
 
 ## R16. Quality tooling
 
@@ -276,16 +282,16 @@ This decision was added on 2026-11-20 because the user requires the dependency.
   2. `lib/foundations.dart` re-exports it unchanged: `export 'package:switchable_state/switchable_state.dart';`. There are no wrappers, no `show`/`hide` lists, and no renames.
   3. Foundations depends on no adapter at runtime (FR-043). `switchable_state_riverpod` and `switchable_state_bloc` are `dev_dependencies` only. They run the sample micro app's widget tests under two libraries (SC-013). Cubit is included on purpose: its stream delivery causes a rebuild one frame later, which catches tests that wrongly assume synchronous rebuilds.
   4. The host chooses the adapter. Core's initialization configuration names it, and the host places the root `StateScope(adapter: …)` above its router ([contracts/micro-app.md](contracts/micro-app.md#host-sequence)).
-  5. Foundations' own capability contracts keep exposing changes as Dart `Stream`s (`SessionContext.changes`, `Permissions.changes`). They are not exposed as `StateStore`s.
+  5. Foundations' own capability contracts keep exposing changes as Dart `Stream`s (`SessionContext.changes`, `FeatureFlags.changes`). They are not exposed as `StateStore`s.
 - **Rationale**:
   - The package follows the same pattern as the Design System: one first-party package, delivered unchanged at one version. That keeps micro apps on one dependency and lets "change one line at startup" apply to every micro app.
   - Keeping adapters out of Foundations keeps vendor state libraries out of its runtime graph (FR-003, FR-004).
-  - Session and permissions stay as streams because a `StateStore` exposes `replace` and `update`. Any consumer could then overwrite the session, which only Core may change. A micro app that wants a store can copy the stream into one of its own.
+  - Session and flag changes stay as streams because a `StateStore` exposes `replace` and `update`. Any consumer could then overwrite the session, which only Core may change. A micro app that wants a store can copy the stream into one of its own.
 - **Alternatives considered**:
   - Foundations picks one adapter, such as Riverpod: rejected because it defeats the package's purpose and adds a vendor dependency.
   - Foundations wraps `switchable_state` in its own abstraction: rejected because the user asked for the package itself, and a second contract layer would duplicate it.
   - A caret constraint (`^0.1.0`): rejected for now. Separate lockfiles (the App Shell and each example) could resolve different 0.1.x patches, which breaks the single-version rule. Revisit at 1.0.
-  - Exposing session and permissions as `AppState`/`StateStore`: rejected for the reason above.
+  - Exposing the session as `AppState`/`StateStore`: rejected for the reason above.
 - **Effect on micro apps**: Micro apps keep app-wide, route-group, and screen state only through the re-exported contract. They never depend on `switchable_state`, an adapter, or a state library at runtime. Their widget tests may add any adapter as a development-only dependency.
 
 ## R20. Adapting `flutter_enterprise_architecture`
@@ -304,7 +310,7 @@ This decision was added on 2026-11-21, at the user's request: take the main idea
 | A `BrokerInterface` is a class with `route` + `requiredParameters` + `receive` | A provider declares an `endpoint` (URL + required parameters) and implements `handle` or `build`. Unit tests call it directly, with no Core (SC-014). | FR-046 |
 | `IBroker.isRegistered(route)` | `InterModuleCommunication.isRegistered({url, type})`, covered by conformance case C17 | FR-010 |
 | `guardedRoutes` / `unguardedRoutes` | `MicroAppRoute.requiresAuthentication`, default `true`. The host guards these routes with `SessionContext`. | FR-048 |
-| Routes of the router's type `T`, which the shell turns into the router | A router-neutral route contract (`MicroAppRoute` with name, path pattern, builder, presentation, and children, plus `MicroAppRouteGroup`). Core builds the real router from it ([contracts/routing.md](contracts/routing.md)). This is the user's stated intent. | FR-053, R15 |
+| Routes of the router's type `T`, which the shell turns into the router | A router-neutral route contract (`MicroAppRoute` with path pattern, builder, presentation, and children, plus `MicroAppRouteGroup`). Core builds the real router from it ([contracts/routing.md](contracts/routing.md)). This is the user's stated intent. | FR-053, R15 |
 | `commonStoredKeys` with duplicate detection | `MicroApp.storedKeys`: duplicates stop startup, and each micro app's stores are limited to its declared keys, so no micro app can overwrite another's values. This is the user's stated purpose. | FR-052, R12 |
 | `bootstrap()` + `onTenantLifecycleChanged(disposed)` | `initialize(context)` + `dispose()`. `dispose` runs in reverse order. | FR-029, FR-049 |
 | `ICDestination.trace` + `PerformanceTraceLogger` | `InterModuleEndpoint.traceName` only. Core times traced calls and records their name, duration, and status in its own diagnostics. Per the user (2026-11-21), no performance-tracing capability is added, and the capability set stays as it was. | FR-050 |

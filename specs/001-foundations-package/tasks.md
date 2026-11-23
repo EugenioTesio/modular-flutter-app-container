@@ -20,7 +20,16 @@ description: "Task list for the Foundations package"
 
 **Code conventions (required, user conventions)**:
 - Exceptions are named `…Exception`, `implements Exception`, and live in `lib/src/exceptions/` (one file each), for example `DuplicateEndpointException`.
-- Use "type" rather than "kind" for classifications the project introduces, for example `EndpointType`, `isRegistered({url, type})`, `ApiFailureType` with `ApiFailure.type`, and `StorageFailureType` with `StorageFailure.type`.
+- Use "type" rather than "kind" for classifications the project introduces, for example `EndpointType`, `isRegistered({url, type})`, `ApiExceptionType` with `ApiException.type`, and `StorageExceptionType` with `StorageException.type`.
+- Scope names to their feature (`AppInfoEnvironment`, `BoolFeatureFlag`, `DevicePermissionStatus`). Group helpers as static methods, and prefer SDK helpers (`mapEquals`) over custom ones.
+- **Public API documentation**: every declaration micro apps can use gets a proper dartdoc comment in the same task that adds it, in the shape the root `CLAUDE.md` describes (taken from the user's reference classes):
+  - Types: a role-noun summary, "Use this…", "This is **not**…", "Built-in:", and a "Usage from a micro app:" label above a ` ```dart ` block.
+  - Constructors: "Creates a…" plus a `Parameters:` list of `* [name] - …` lines.
+  - Methods: a verb summary, `Parameters:`, then returns and failures.
+  - Fields: noun phrases, with "Optional…" for nullable ones.
+  - Use `[links]` via `@docImport`, no `@param` tags, and no spec IDs.
+  
+  Lints and `dart doc --dry-run` enforce it. When `MicroApp` lands (T059), turn the backticked `MicroApp.storedKeys`, `dataEndpoints`, and `widgetEndpoints` mentions in existing docs into links.
 
 **Organization**: Tasks are grouped by user story so each story can be built and tested on its own.
 
@@ -150,26 +159,27 @@ description: "Task list for the Foundations package"
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T033 [P] [US2] Write the `Result` tests in `foundations/test/common/result_test.dart`: an exhaustive `switch` over `Ok` and `Err`, and value equality.
-- [ ] T034 [P] [US2] Write the API client tests in `foundations/test/capabilities/api_client_test.dart`:
+- [X] T033 [P] [US2] Write the `Result` tests in `foundations/test/common/result_test.dart`: an exhaustive `switch` over `Ok` and `Err`, and value equality.
+- [X] T034 [P] [US2] Write the API client tests in `foundations/test/capabilities/api_client_test.dart`:
   - The request defaults and equality.
-  - Each `ApiClientShortcuts` method calls `send` with the right `ApiMethod`, `path`, `query`, `headers`, and `body` (using a recording fake).
-  - An exhaustive `switch` over `ApiFailureType`.
-  - Cite data-model.md `ApiRequest.path`, `ApiRequest.body`, `ApiFailure.type`, and `ApiResponse.statusCode`.
-- [ ] T035 [P] [US2] Write the feature-flag tests in `foundations/test/capabilities/feature_flags_test.dart`:
-  - The typed `BoolFlag`, `StringFlag`, and `NumberFlag` definitions.
+  - Each `ApiClientShortcuts` method calls `send` with the right `ApiMethod`, `path`, `queryParams`, `headers`, and `body` (using a recording fake).
+  - An exhaustive `switch` over `ApiExceptionType`.
+  - Cite data-model.md `ApiRequest.path`, `ApiRequest.body`, `ApiException.type`, and `ApiResponse.statusCode`.
+- [X] T035 [P] [US2] Write the feature-flag tests in `foundations/test/capabilities/feature_flags_test.dart`:
+  - The typed `BoolFeatureFlag`, `StringFeatureFlag`, and `NumberFeatureFlag` definitions.
   - A fake that returns the default for unknown flags and for flags of the wrong kind.
   - `changes` emits after a refresh.
   - Cite data-model.md `FeatureFlag.key` and `FeatureFlag.defaultValue`.
-- [ ] T036 [P] [US2] Write the logger tests in `foundations/test/capabilities/app_logger_test.dart`. `debug`, `info`, `warning`, and `error` must call `log` with the matching data-model.md `LogLevel`, passing `error`, `stackTrace`, and `context` through.
-- [ ] T037 [P] [US2] Write the navigation outcome tests in `foundations/test/routing/navigation_result_test.dart`: an exhaustive `switch` over `NavigationResult`, including the sealed `NavigationFailure`, and `RouteParametersMissing.missing`. Cite data-model.md `NavigationResult.result`.
-- [ ] T038 [P] [US2] Write the value-type tests in `foundations/test/capabilities/value_types_test.dart`:
+- [X] T036 [P] [US2] Write the logger tests in `foundations/test/capabilities/app_logger_test.dart`. `debug`, `info`, `warning`, and `error` must call `log` with the matching data-model.md `LogLevel`, passing `error`, `stackTrace`, and `context` through.
+- [X] T037 [P] [US2] Write the navigation outcome tests in `foundations/test/routing/navigation_result_test.dart`: an exhaustive `switch` over `Result<NavigationResult, NavigationException>`, `RouteNotFoundException.path`, and value equality. Cite data-model.md `NavigationResult` and `NavigationException`. *(Revised 2026-11-23.)*
+- [X] T038 [P] [US2] Write the value-type tests in `foundations/test/capabilities/value_types_test.dart`:
   - An exhaustive `switch` over `SessionState`.
-  - `UserIdentity` and `Permission` equality.
-  - Every `StorageFailureType`, including `undeclaredKey`.
-  - Every `AppEnvironment` value.
-  - Cite data-model.md `UserIdentity.userId`, `Permission.name`, `StorageFailure.type`, and `AppInfo.environment`.
-- [ ] T039 [P] [US2] Create in-memory fakes for all eleven capabilities in `foundations/test/support/fakes.dart`, plus `foundations/test/capabilities/sample_feature_test.dart`, in which a sample feature that uses every capability runs with no device, network, or Core. Cover the US2 acceptance scenarios that Foundations can verify:
+  - `UserIdentity` equality, including `customProperties` compared key by key, and a `toString` that hides personal data.
+  - An exhaustive `switch` over every `DevicePermission` variant, the defaults and equality of the variants with options, every `DevicePermissionStatus` (including `unsupported`), and every `DevicePermissionServiceStatus`.
+  - Every `StorageExceptionType`, including `undeclaredKey`.
+  - Every `AppInfoEnvironment` value.
+  - Cite data-model.md `UserIdentity.userId`, `UserIdentity.customProperties`, `DevicePermission`, `StorageException.type`, and `AppInfo.environment`.
+- [X] T039 [P] [US2] Create in-memory fakes for all eleven capabilities in `foundations/test/support/fakes.dart`, plus `foundations/test/capabilities/sample_feature_test.dart`, in which a sample feature that uses every capability runs with no device, network, or Core. Cover the US2 acceptance scenarios that Foundations can verify:
   - 1–2: the version comes from `AppInfo`, and the feature runs on fakes.
   - 4: no-op analytics, crash reporting, and logging don't change behavior.
   - 5–6: an explicit `Unauthenticated` state, and change notifications.
@@ -181,22 +191,22 @@ description: "Task list for the Foundations package"
 
 ### Implementation for User Story 2
 
-- [ ] T040 [P] [US2] Implement `Result`, `Ok`, and `Err` in `foundations/lib/src/common/result.dart`, following data-model.md "Result<T, F>".
-- [ ] T041 [P] [US2] Implement `AppInfo` and `AppEnvironment` in `foundations/lib/src/capabilities/app_info.dart`. Cite data-model.md `AppInfo.appName`, `AppInfo.version`, `AppInfo.buildNumber`, and `AppInfo.environment`.
-- [ ] T042 [P] [US2] Implement `ApiMethod`, `ApiRequest`, `ApiResponse`, `ApiFailure`, `ApiFailureType`, `ApiClient`, and `ApiClientShortcuts` in `foundations/lib/src/capabilities/api_client.dart`.
-  - Document the failure-type mapping table, and that credentials are never exposed (FR-039).
-  - Cite data-model.md `ApiRequest.method`, `ApiRequest.path`, `ApiRequest.query`, `ApiRequest.headers`, `ApiRequest.body`, `ApiResponse.statusCode`, `ApiResponse.body`, `ApiResponse.headers`, `ApiFailure.type`, `ApiFailure.statusCode`, and `ApiFailure.body`.
-- [ ] T043 [P] [US2] Implement `Analytics` in `foundations/lib/src/capabilities/analytics.dart`. Cite data-model.md `Analytics event.name`, `Analytics event.properties`, `Screen view.screenName`, and `Screen view.properties`.
-- [ ] T044 [P] [US2] Implement `CrashReporter` in `foundations/lib/src/capabilities/crash_reporter.dart`. Cite data-model.md `Error report.error`, `Error report.stackTrace`, `Error report.reason`, and `Error report.context`, plus the pseudonymous user identifier rule.
-- [ ] T045 [P] [US2] Implement `AppLogger`, `LogLevel`, and `AppLoggerShortcuts` in `foundations/lib/src/capabilities/app_logger.dart`. Document the rule that log entries contain no credentials or personal data. Cite data-model.md `LogLevel`, `Log entry.level`, `Log entry.message`, and `Log entry.context`.
-- [ ] T046 [P] [US2] Implement `FeatureFlags` (with `valueOf` and `changes`) and the sealed `FeatureFlag`, `BoolFlag`, `StringFlag`, and `NumberFlag` in `foundations/lib/src/capabilities/feature_flags.dart`. Cite data-model.md `FeatureFlag.key` and `FeatureFlag.defaultValue`.
-- [ ] T047 [P] [US2] Implement `KeyValueStore`, `SecureKeyValueStore`, `StorageFailure`, and `StorageFailureType` in `foundations/lib/src/capabilities/key_value_store.dart`.
+- [X] T040 [P] [US2] Implement `Result`, `Ok`, and `Err` in `foundations/lib/src/common/result.dart`, following data-model.md "Result<T, F>".
+- [X] T041 [P] [US2] Implement `AppInfo` and `AppInfoEnvironment` in `foundations/lib/src/capabilities/app_info.dart`. Cite data-model.md `AppInfo.appName`, `AppInfo.version`, `AppInfo.buildNumber`, and `AppInfo.environment`.
+- [X] T042 [P] [US2] Implement `ApiMethod`, `ApiRequest`, `ApiResponse`, `ApiClient`, and `ApiClientShortcuts` in `foundations/lib/src/capabilities/api_client.dart`, and `ApiException` with `ApiExceptionType` in `foundations/lib/src/exceptions/api_exception.dart`.
+  - Document the exception-type mapping table, and that credentials are never exposed (FR-039).
+  - Cite data-model.md `ApiRequest.method`, `ApiRequest.path`, `ApiRequest.queryParams`, `ApiRequest.headers`, `ApiRequest.body`, `ApiResponse.statusCode`, `ApiResponse.body`, `ApiResponse.headers`, `ApiException.type`, `ApiException.statusCode`, and `ApiException.body`.
+- [X] T043 [P] [US2] Implement `Analytics` in `foundations/lib/src/capabilities/analytics.dart`. Cite data-model.md `Analytics event.name`, `Analytics event.properties`, `Screen view.screenName`, and `Screen view.properties`.
+- [X] T044 [P] [US2] Implement `CrashReporter` in `foundations/lib/src/capabilities/crash_reporter.dart`. Cite data-model.md `Error report.error`, `Error report.stackTrace`, `Error report.reason`, and `Error report.context`, plus the pseudonymous user identifier rule.
+- [X] T045 [P] [US2] Implement `AppLogger`, `LogLevel`, and `AppLoggerShortcuts` in `foundations/lib/src/capabilities/app_logger.dart`. Document the rule that log entries contain no credentials or personal data. Cite data-model.md `LogLevel`, `Log entry.level`, `Log entry.message`, and `Log entry.context`.
+- [X] T046 [P] [US2] Implement `FeatureFlags` (with `valueOf` and `changes`) and the sealed `FeatureFlag`, `BoolFeatureFlag`, `StringFeatureFlag`, and `NumberFeatureFlag` in `foundations/lib/src/capabilities/feature_flags.dart`. Cite data-model.md `FeatureFlag.key` and `FeatureFlag.defaultValue`.
+- [X] T047 [P] [US2] Implement `KeyValueStore` and `SecureKeyValueStore` in `foundations/lib/src/capabilities/key_value_store.dart`, and `StorageException` with `StorageExceptionType` in `foundations/lib/src/exceptions/storage_exception.dart`.
   - Document that Core limits each micro app's stores to its declared keys.
-  - Cite data-model.md `Storage entry.key`, `Storage entry.value`, `StorageFailure.type`, and `StorageFailure.key`.
-- [ ] T048 [P] [US2] Implement `SessionContext`, `SessionState`, `Authenticated`, `Unauthenticated`, and `UserIdentity` in `foundations/lib/src/capabilities/session_context.dart`. Cite data-model.md `SessionState`, `UserIdentity.userId`, and `UserIdentity.displayName`, and the "Session" state transitions.
-- [ ] T049 [P] [US2] Implement `Permissions`, `Permission`, and an empty `SharedPermissions` in `foundations/lib/src/capabilities/permissions.dart`. Document the rule that a permission moves into Foundations once a second module needs it. Cite data-model.md `Permission.name`.
-- [ ] T050 [P] [US2] Implement `AppNavigator` (`open`, `go`, `close`) along with `NavigationResult`, `RouteCompleted`, `RouteCancelled`, `NavigationFailure`, `RouteNotFound`, and `RouteParametersMissing` in `foundations/lib/src/routing/app_navigator.dart`, per contracts/routing.md. Cite data-model.md "Route name", "Navigation parameters", and `NavigationResult.result`.
-- [ ] T051 [US2] Export the T040–T050 files from `foundations/lib/foundations.dart`. T033–T039 must pass.
+  - Cite data-model.md `Storage entry.key`, `Storage entry.value`, `StorageException.type`, and `StorageException.key`.
+- [X] T048 [P] [US2] Implement `SessionContext`, `SessionState`, `Authenticated`, `Unauthenticated`, and `UserIdentity` in `foundations/lib/src/capabilities/session_context.dart`. Cite data-model.md `SessionState`, `UserIdentity.userId`, `UserIdentity.displayName`, `UserIdentity.email`, `UserIdentity.phoneNumber`, and `UserIdentity.customProperties`, and the "Session" state transitions. No tokens (FR-039).
+- [X] T049 [P] [US2] Implement `DevicePermissions` (`status`, `request`, `serviceStatus`, `openAppSettings`), the sealed `DevicePermission` with one variant per `permission_handler` permission (options enums for photos, storage, calendar, location, sensors, and Bluetooth), `DevicePermissionStatus`, and `DevicePermissionServiceStatus` in `foundations/lib/src/capabilities/device_permissions.dart`. Document that business entitlements are out of scope. Cite data-model.md "Device permissions". *(Revised 2026-11-23.)*
+- [X] T050 [P] [US2] Implement `AppNavigator` (`push`, `go`, `replace`, `pop`, `popUntil`) along with `NavigationResult`, `RouteCompleted`, and `RouteCancelled` in `foundations/lib/src/routing/app_navigator.dart`, and the sealed `NavigationException` with `RouteNotFoundException` in `foundations/lib/src/exceptions/navigation_exception.dart`, per contracts/routing.md. Cite data-model.md "Navigation path", "Navigation body", `NavigationResult`, and `NavigationException`. *(Revised 2026-11-23.)*
+- [X] T051 [US2] Export the T040–T050 files (including the three exception files) from `foundations/lib/foundations.dart`. T033–T039 must pass.
 
 **Checkpoint**: Micro apps can use every capability through vendor-neutral contracts and fake them in tests.
 
@@ -213,15 +223,15 @@ description: "Task list for the Foundations package"
 ### Tests for User Story 3 ⚠️
 
 - [ ] T052 [P] [US3] Write the route-tree validation tests in `foundations/test/routing/route_tree_validation_test.dart`.
-  - Rejected: a duplicate route name, a duplicate full path, a top-level path without the `/<microAppId>` prefix, and a repeated path parameter.
+  - Rejected: a duplicate full path, a top-level path without the `/<microAppId>` prefix, and a repeated path parameter.
   - Child paths join correctly.
   - The sign-in requirement is inherited from ancestors.
-  - Cite data-model.md `MicroAppRoute.name`, `MicroAppRoute.path`, `MicroAppRoute.requiresAuthentication`, `MicroAppRoute.routes`, and `MicroAppRouteGroup.routes`.
+  - Cite data-model.md `MicroAppRoute.path`, `MicroAppRoute.requiresAuthentication`, `MicroAppRoute.routes`, and `MicroAppRouteGroup.routes`.
 - [ ] T053 [P] [US3] Write the reference-router tests in `foundations/test/routing/reference_router_test.dart`, following quickstart.md V10 and covering SC-015.
-  - The deep link `/accounts/details/42?tab=movements` and `open('accounts.details', …)` show the same screen.
-  - `RouteParametersMissing` and `RouteNotFound` are returned in their cases.
-  - Picker results come back as `RouteCompleted` or `RouteCancelled`.
-  - `go` returns `null` on success.
+  - The deep link `/accounts/details/42?tab=movements` and `push('/accounts/details/42?tab=movements', body: {...})` show the same screen; only the push delivers the body.
+  - `Err(RouteNotFoundException)` is returned for a location that matches no route, and by `popUntil` for a path not in the stack.
+  - Picker results come back as `Ok(RouteCompleted)` or `Ok(RouteCancelled)`, for both `push` and `replace`.
+  - `go` returns `Ok` on success and replaces the stack. `popUntil` closes screens down to its path.
   - A route that needs sign-in redirects while the user is `Unauthenticated`.
   - A `fullscreenDialog` route is presented as a full-screen dialog.
   - Moving between routes in a group keeps the group's layout and its `StateScope.group` state.
@@ -230,8 +240,8 @@ description: "Task list for the Foundations package"
   - The fixture builds a `MicroAppContext` with one contract missing.
   - Cite data-model.md "MicroAppContext", where all fields are required.
 - [ ] T055 [P] [US3] Write the reference-host tests in `foundations/test/micro_app/reference_host_test.dart`, covering US3 scenarios 1–9 and SC-016.
-  - Startup stops in each of these cases, with an error naming the culprit: a duplicate `id`; the same stored key declared by two micro apps (naming the key and both micro apps); a duplicate route name or full path; a duplicate provider URL (`DuplicateEndpointException`).
-  - Each micro app gets its own context, and its stores return `StorageFailureType.undeclaredKey` for keys it didn't declare, leaving the other micro app's value untouched.
+  - Startup stops in each of these cases, with an error naming the culprit: a duplicate `id`; the same stored key declared by two micro apps (naming the key and both micro apps); a duplicate full path; a duplicate provider URL (`DuplicateEndpointException`).
+  - Each micro app gets its own context, and its stores return `StorageExceptionType.undeclaredKey` for keys it didn't declare, leaving the other micro app's value untouched.
   - Micro apps initialize in order. `isRegistered` is true for every declared provider after startup.
   - `dispose` runs in reverse order and continues after one teardown throws.
   - Cite data-model.md `MicroApp.storedKeys` and the "Stored key" entity.
@@ -239,8 +249,8 @@ description: "Task list for the Foundations package"
 
 ### Implementation for User Story 3
 
-- [ ] T057 [P] [US3] Implement `MicroAppRouteNode`, `MicroAppRoute`, `MicroAppRouteGroup`, `MicroAppRouteBuilder`, and `RoutePresentation` in `foundations/lib/src/routing/micro_app_route.dart`, per contracts/routing.md. Cite data-model.md `MicroAppRoute.name`, `MicroAppRoute.path`, `MicroAppRoute.builder`, `MicroAppRoute.requiresAuthentication`, `MicroAppRoute.presentation`, `MicroAppRoute.routes`, `MicroAppRouteGroup.builder`, and `MicroAppRouteGroup.routes`.
-- [ ] T058 [P] [US3] Implement `MicroAppContext` in `foundations/lib/src/micro_app/micro_app_context.dart`, with all twelve required fields from the data-model.md "MicroAppContext" table: `MicroAppContext.communication`, `MicroAppContext.apiClient`, `MicroAppContext.analytics`, `MicroAppContext.crashReporter`, `MicroAppContext.logger`, `MicroAppContext.featureFlags`, `MicroAppContext.keyValueStore`, `MicroAppContext.secureKeyValueStore`, `MicroAppContext.navigator`, `MicroAppContext.session`, `MicroAppContext.permissions`, and `MicroAppContext.appInfo`. Document that Core builds one per micro app, with storage limited to that micro app's keys.
+- [ ] T057 [P] [US3] Implement `MicroAppRouteNode`, `MicroAppRoute`, `MicroAppRouteGroup`, `MicroAppRouteBuilder`, and `RoutePresentation` in `foundations/lib/src/routing/micro_app_route.dart`, per contracts/routing.md. Cite data-model.md `MicroAppRoute.path`, `MicroAppRoute.builder`, `MicroAppRoute.requiresAuthentication`, `MicroAppRoute.presentation`, `MicroAppRoute.routes`, `MicroAppRouteGroup.builder`, and `MicroAppRouteGroup.routes`.
+- [ ] T058 [P] [US3] Implement `MicroAppContext` in `foundations/lib/src/micro_app/micro_app_context.dart`, with all twelve required fields from the data-model.md "MicroAppContext" table: `MicroAppContext.communication`, `MicroAppContext.apiClient`, `MicroAppContext.analytics`, `MicroAppContext.crashReporter`, `MicroAppContext.logger`, `MicroAppContext.featureFlags`, `MicroAppContext.keyValueStore`, `MicroAppContext.secureKeyValueStore`, `MicroAppContext.navigator`, `MicroAppContext.session`, `MicroAppContext.devicePermissions`, and `MicroAppContext.appInfo`. Document that Core builds one per micro app, with storage limited to that micro app's keys.
 - [ ] T059 [US3] Implement the `MicroApp` interface in `foundations/lib/src/micro_app/micro_app.dart`, documenting the host sequence from contracts/micro-app.md.
   - Cite data-model.md `MicroApp.id`, `MicroApp.storedKeys`, `MicroApp.initialize`, `MicroApp.routes`, `MicroApp.localizationsDelegates`, `MicroApp.dataEndpoints`, `MicroApp.widgetEndpoints`, and `MicroApp.dispose`.
   - Depends on T057 and T058.
@@ -250,7 +260,7 @@ description: "Task list for the Foundations package"
   - `foundations/test/support/reference_router.dart`: builds a go_router from route trees per the mapping table in contracts/routing.md, and implements `AppNavigator` on top of it.
   - Both are dev-only, and both serve as the reference for Core.
 - [ ] T062 [US3] Create the reference host and the sample micro apps in `foundations/test/support/`:
-  - `foundations/test/support/reference_host.dart`: host sequence steps 1–7 from contracts/micro-app.md, with fake stores limited to each micro app's declared keys (data-model.md "Stored key", `StorageFailure.type`).
+  - `foundations/test/support/reference_host.dart`: host sequence steps 1–7 from contracts/micro-app.md, with fake stores limited to each micro app's declared keys (data-model.md "Stored key", `StorageException.type`).
   - `foundations/test/support/sample_micro_apps.dart`: sample Accounts and Transfers micro apps with `storedKeys`, an `accounts.details` route at `/accounts/details/:accountId`, a tab `MicroAppRouteGroup`, and providers.
   - T052–T056 must pass.
 
@@ -355,7 +365,7 @@ description: "Task list for the Foundations package"
 - [ ] T089 [P] [US6] Write `foundations/README.md`. It covers:
   - the package's purpose and its two entry points;
   - a step-by-step guide to publishing a data endpoint in one micro app and consuming it from another (SC-004);
-  - the inclusion rules: no feature models, the permission move rule, no wrapping of `design_system` or `switchable_state`, and a fixed capability set;
+  - the inclusion rules: no feature models, no business entitlements, no wrapping of `design_system` or `switchable_state`, and a fixed capability set;
   - the versioning and deprecation policy;
   - the Design System relocation steps from research R3.
 - [ ] T090 [P] [US6] Write the pull request template `foundations/.github/pull_request_template.md`. Its checklist covers the semver classification (compatible or breaking), migration notes, documentation for new public elements, the inclusion rules, and the changelog entry, which also states the delivered `design_system` and `switchable_state` versions. This covers US6 scenarios 1–4.

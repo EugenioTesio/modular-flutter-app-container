@@ -4,9 +4,10 @@ Foundations stores no data. Its "data model" is the set of value types, states, 
 
 ## Shared rules
 
-- **Payload rule** (`isInterModuleValue`): a value passes if it is `null`, a `bool`, `num`, or `String`, a `List` whose elements all pass, or a `Map<String, …>` whose values all pass. This rule applies to inter-module parameters, inter-module data, and navigation results (FR-009, FR-023). Navigation *parameters* are stricter: they are text only, so routes stay deep-linkable.
-- **Immutability**: every value type is `@immutable` with value equality. Maps and sets are compared by content.
-- **Key and identifier convention**: identifiers that a module owns are prefixed with the micro app id: `<microAppId>.<name>` for flags, storage keys, permissions, and route names, and `/<microAppId>/…` for route paths and endpoint URLs. Storage keys are also *declared* (`storedKeys`), and the declaration is what enforces ownership.
+- **Payload rule** (`isInterModuleValue`): a value passes if it is `null`, a `bool`, `num`, or `String`, a `List` whose elements all pass, or a `Map<String, …>` whose values all pass. This rule applies to inter-module parameters, inter-module data, and the navigation bodies and results exchanged with another micro app's screen (FR-009, FR-023). A navigation *path* is stricter: its parameters are text, so every location stays deep-linkable.
+- **Immutability**: every value type is `@immutable` with value equality. Map and set fields are compared by content, one level deep, with Flutter's `mapEquals` and `setEquals`. Other fields, including `Object?` bodies and nested collections, are compared with `==`.
+- **Exceptions**: every error type is named `…Exception`, `implements Exception`, and lives in `lib/src/exceptions/`. Contracts return them in an `Err` instead of throwing, except `DuplicateEndpointException`.
+- **Key and identifier convention**: identifiers that a module owns are prefixed with the micro app id: `<microAppId>.<name>` for flags and storage keys, and `/<microAppId>/…` for route paths and endpoint URLs. Storage keys are also *declared* (`storedKeys`), and the declaration is what enforces ownership.
 
 ## Inter-module communication
 
@@ -35,7 +36,7 @@ Foundations stores no data. Its "data model" is the set of value types, states, 
 | `missing_required_parameters` | 400 | Core, before the provider runs |
 | `endpoint_not_registered` | 404 | Core |
 | `unauthenticated` | 400 | The provider, when the user is not signed in |
-| `forbidden` | 400 | The provider, when the user lacks a permission |
+| `forbidden` | 400 | The provider, when the user is not allowed to make the call (the providing micro app decides) |
 
 ### Registration
 
@@ -65,27 +66,31 @@ Foundations stores no data. Its "data model" is the set of value types, states, 
 | `appName` | `String` | Not empty |
 | `version` | `String` | Semantic version string, such as `1.4.0` |
 | `buildNumber` | `String` | Not empty |
-| `environment` | `AppEnvironment` | One of `development`, `staging`, or `production` |
+| `environment` | `AppInfoEnvironment` | One of `development`, `staging`, or `production` |
 
 ### API client (FR-039)
 
 | Entity | Fields | Rules |
 |--------|--------|-------|
 | `ApiMethod` | `get`, `post`, `put`, `patch`, `delete` | |
-| `ApiRequest` | `method`, `path`, `query: Map<String, String>`, `headers: Map<String, String>`, `body: Object?` | `path` is relative and starts with `/`. `body` must be JSON-encodable. The implementation sets credential headers and overrides any header with the same name that the caller supplies. |
+| `ApiRequest` | `method`, `path`, `queryParams: Map<String, String>`, `headers: Map<String, String>`, `body: Object?` | `path` is relative and starts with `/`. `body` must be JSON-encodable. The implementation sets credential headers and overrides any header with the same name that the caller supplies. |
 | `ApiResponse` | `statusCode: int`, `body: Object?` (decoded JSON), `headers: Map<String, String>` | It is returned only for 2xx and 3xx responses. |
-| `ApiFailure` | `type: ApiFailureType`, `statusCode: int?`, `body: Object?` | Each failure has exactly one type (see the table below). |
-| `ApiFailureType` | `noConnectivity`, `timeout`, `unauthorized`, `clientError`, `serverError` | See the mapping table below. |
+| `ApiException` | `type: ApiExceptionType`, `statusCode: int?`, `body: Object?` | Each failure has exactly one type (see the table below). |
+| `ApiExceptionType` | Connection: `noConnectivity`, `timeout`, `badCertificate`. Backend answer: `unauthorized`, `clientError`, `serverError`. The client itself: `invalidRequest`, `invalidResponse`, `unknown` | See the mapping table below. |
 
-How failures map to `ApiFailureType` ([research R10](research.md#r10-api-client-contract)):
+How failures map to `ApiExceptionType` ([research R10](research.md#r10-api-client-contract)):
 
-| Condition | `ApiFailureType` |
+| Condition | `ApiExceptionType` |
 |-----------|------------------|
 | No connection or DNS failure | `noConnectivity` |
 | The deadline was exceeded | `timeout` |
+| The TLS handshake failed or the certificate was rejected (for example by pinning) | `badCertificate` |
 | HTTP 401 | `unauthorized` |
 | Any other HTTP 4xx | `clientError` (the `statusCode` and body are kept) |
-| HTTP 5xx, or a response body that can't be decoded | `serverError` |
+| HTTP 5xx | `serverError` (the `statusCode` and body are kept) |
+| The request could not be built or encoded (body not JSON-encodable, invalid path, query parameter, or header). No call reached the backend | `invalidRequest` |
+| The response could not be decoded (malformed JSON, unexpected content type, wrong shape) | `invalidResponse` (the `statusCode` is kept) |
+| Any other error raised inside the client | `unknown` |
 
 ### Analytics, crash reporting, logging (FR-020, FR-021, FR-041)
 
@@ -99,7 +104,7 @@ How failures map to `ApiFailureType` ([research R10](research.md#r10-api-client-
 
 ### FeatureFlag\<T\> (FR-040)
 
-`sealed`. Its variants are `BoolFlag` (`T = bool`), `StringFlag` (`T = String`), and `NumberFlag` (`T = num`).
+`sealed`. Its variants are `BoolFeatureFlag` (`T = bool`), `StringFeatureFlag` (`T = String`), and `NumberFeatureFlag` (`T = num`).
 
 | Field | Type | Rules |
 |-------|------|-------|
@@ -114,7 +119,7 @@ How failures map to `ApiFailureType` ([research R10](research.md#r10-api-client-
 |--------|--------|-------|
 | Storage entry | `key: String`, `value: String` | The key must be one of the owning micro app's `storedKeys` (FR-052). It should follow `<microAppId>.<key>`, but legacy keys may be declared as they are. Values are opaque strings that each micro app serializes itself. |
 | Stored key | `String`, declared in `MicroApp.storedKeys` | Declared by exactly one micro app in the host, and covers both general and secure storage. A duplicate stops startup, naming the key and both micro apps. |
-| `StorageFailure` | `type: StorageFailureType`, `key: String` | `StorageFailureType` is one of `unavailable`, `readFailed`, `writeFailed`, `deleteFailed`, or `undeclaredKey`. `undeclaredKey` is returned for any operation on a key the calling micro app did not declare. |
+| `StorageException` | `type: StorageExceptionType`, `key: String` | `StorageExceptionType` is one of `unavailable`, `readFailed`, `writeFailed`, `deleteFailed`, or `undeclaredKey`. `undeclaredKey` is returned for any operation on a key the calling micro app did not declare. |
 
 `SecureKeyValueStore` holds entries the same way, but in secure storage. It implements `KeyValueStore`, so a secure store can be used where a general store is expected. The reverse is not allowed. Core gives each micro app its own instances of both stores, limited to its declared keys.
 
@@ -124,18 +129,21 @@ The route declarations are in [Routing](#routing-fr-023-fr-048-fr-053). Navigati
 
 | Entity | Fields | Rules |
 |--------|--------|-------|
-| Route name | `String` | Follows `<microAppId>.<screen>` and is unique in the app |
-| Navigation parameters | `Map<String, String>` | Text only. Path parameters are filled by name, and every other parameter becomes a query parameter, so the same route is reachable by deep link. |
-| `NavigationResult` | `sealed`: `RouteCompleted(result)`, `RouteCancelled()`, or a `NavigationFailure`. A `NavigationFailure` is `sealed`: `RouteNotFound(routeName)` or `RouteParametersMissing(routeName, missing)`. | `result` must follow the payload rule. `go` returns only `NavigationFailure?`. |
+| Navigation path | `String` | A concrete location, such as `/accounts/details/a1?tab=history`: path parameters filled in, query parameters attached. The same location works as a deep link. |
+| Navigation body | `Map<String, Object>` | Defaults to `{}`. Extra values for the destination screen. Follows the payload rule when the screen belongs to another micro app. Empty when the screen is opened from a deep link. |
+| `NavigationResult` | `sealed`: `RouteCompleted(result: Map<String, Object>)` or `RouteCancelled()` | How a pushed or replaced screen closed. `result` follows the payload rule across micro apps. |
+| `NavigationException` | `sealed`, `implements Exception`: `RouteNotFoundException(path)` | Returned in an `Err` by `push`, `go`, and `replace` when the path matches no route, and by `popUntil` when no screen in the stack is at the path. |
 
-State transitions of an `open` call:
+Operation results: `push` and `replace` → `Future<Result<NavigationResult, NavigationException>>`; `go` and `popUntil` → `Result<void, NavigationException>`; `pop({result})` → `void`.
+
+State transitions of a `push` call:
 
 ```text
-open(name) ──► name unknown ────────────────────────────────► RouteNotFound
-          ├──► path parameter missing ──────────────────────► RouteParametersMissing
-          ├──► needs sign-in while Unauthenticated ──► sign-in abandoned ──► RouteCancelled
-          └──► screen shown ──► close(result: {...}) ───────► RouteCompleted(result)
-                           └──► close() / system back ──────► RouteCancelled
+push(path) ──► path matches no route ───────────────────────► Err(RouteNotFoundException)
+          ├──► needs sign-in while Unauthenticated ──► sign-in abandoned ──► Ok(RouteCancelled)
+          └──► screen shown ──► pop(result: {...}) ─────────► Ok(RouteCompleted(result))
+                           ├──► pop() / system back ────────► Ok(RouteCancelled)
+                           └──► closed by popUntil ─────────► Ok(RouteCancelled)
 ```
 
 ### Session (FR-024)
@@ -143,7 +151,8 @@ open(name) ──► name unknown ───────────────�
 | Entity | Fields | Rules |
 |--------|--------|-------|
 | `SessionState` | `sealed`: `Authenticated(identity)` or `Unauthenticated()` | It is never null or absent. |
-| `UserIdentity` | `userId: String` (opaque), `displayName: String?` | It never holds credentials or tokens. |
+| `UserIdentity` | `userId: String` (opaque), `displayName: String?`, `email: String?`, `phoneNumber: String?`, `customProperties: Map<String, Object?>` (defaults to `{}`) | It never holds credentials or tokens; Core keeps them (FR-039). `customProperties` follows the payload rule (for example an address or a customer segment). Profile fields are personal data: never logged, tracked, or reported. `toString` shows only `userId`. |
+| `Authenticated` | `identity: UserIdentity` | It carries no session, access, or refresh tokens. |
 
 State transitions (each one emits on `changes`):
 
@@ -153,13 +162,23 @@ Authenticated(A) ──sign-out / expiry──► Unauthenticated
 Authenticated(A) ──user switch──► Authenticated(B)
 ```
 
-### Permission (FR-025)
+### Device permissions (FR-025)
 
-| Field | Type | Rules |
-|-------|------|-------|
-| `name` | `String` | Follows `<microAppId>.<action>`, for example `transfers.create`. Two permissions are equal when their names are equal. |
+| Entity | Fields | Rules |
+|--------|--------|-------|
+| `DevicePermission` | `sealed`, one variant per `permission_handler` permission (see the list below) | Equal when the variant and its options are equal. Core maps every variant exhaustively. A platform-only permission returns `unsupported` on the other platform. |
+| `PhotosDevicePermission` | `access: PhotosDevicePermissionAccess` (`readWrite` default, `addOnly` iOS) | |
+| `StorageDevicePermission` | `scope: StorageDevicePermissionScope` (`shared` default, `manageAll`) | Android only. `shared` is always denied on Android 13+; use photos, videos, or audio files there. |
+| `CalendarDevicePermission` | `access: CalendarDevicePermissionAccess` (`full` default, `writeOnly`) | |
+| `LocationDevicePermission` | `access: LocationDevicePermissionAccess` (`whileInUse` default, `always`), `accuracy: LocationDevicePermissionAccuracy` (`precise` default, `approximate`), `temporaryPrecisePurposeKey: String?` | The options `geolocator` needs. `always` is requested after `whileInUse`. On iOS 14+, when only approximate location was allowed and `precise` is asked for, Core requests temporary precise location with the purpose key. |
+| `SensorsDevicePermission` | `access: SensorsDevicePermissionAccess` (`whileInUse` default, `always`) | |
+| `BluetoothDevicePermission` | `access: BluetoothDevicePermissionAccess` (`connect` default, `scan`, `advertise`) | Separate on Android 12+; one permission on iOS and older Android. |
+| `DevicePermissionStatus` | `granted`, `limited`, `provisional`, `denied`, `permanentlyDenied`, `restricted`, `unsupported` | `request` shows no prompt when the status is `granted`, `permanentlyDenied`, `restricted`, or `unsupported`. On Android a status check reports `denied` for a permanently denied permission; only a request reveals `permanentlyDenied`. |
+| `DevicePermissionServiceStatus` | `enabled`, `disabled`, `notApplicable` | For location, Bluetooth, and phone. A granted permission with a `disabled` service still can't be used. |
 
-Ownership: a permission checked by two or more modules is declared in `SharedPermissions` in Foundations. A permission checked by only one module is declared as a `const` in that micro app. A permission moves into Foundations as soon as a second module needs it.
+Variants without options: `CameraDevicePermission`, `MicrophoneDevicePermission`, `VideosDevicePermission`, `AudioFilesDevicePermission`, `MediaLibraryDevicePermission` (iOS), `MediaLocationDevicePermission` (Android), `ContactsDevicePermission`, `RemindersDevicePermission` (iOS), `SpeechRecognitionDevicePermission`, `AssistantDevicePermission` (iOS), `ActivityRecognitionDevicePermission`, `NearbyWifiDevicesDevicePermission` (Android 13+), `LocalNetworkDevicePermission` (iOS 14+), `NotificationsDevicePermission`, `CriticalAlertsDevicePermission` (iOS), `NotificationPolicyDevicePermission` (Android), `PhoneDevicePermission` (Android), `SmsDevicePermission` (Android), `AppTrackingDevicePermission` (iOS), `BackgroundRefreshDevicePermission` (iOS, read only), `IgnoreBatteryOptimizationsDevicePermission` (Android), `ScheduleExactAlarmDevicePermission` (Android 12+), `SystemAlertWindowDevicePermission` (Android), and `InstallPackagesDevicePermission` (Android).
+
+Business entitlements (what the signed-in user may do) are not modeled in Foundations. Each micro app handles them through its own backend.
 
 ## Micro app integration
 
@@ -192,7 +211,7 @@ This bundles every contract. Core builds **one per micro app**: most fields are 
 | `secureKeyValueStore` | `SecureKeyValueStore` |
 | `navigator` | `AppNavigator` |
 | `session` | `SessionContext` |
-| `permissions` | `Permissions` |
+| `devicePermissions` | `DevicePermissions` |
 | `appInfo` | `AppInfo` |
 
 Host lifecycle:
@@ -202,7 +221,7 @@ host reads id and storedKeys from every micro app. A duplicate id or key stops s
   → Core initialization builds one MicroAppContext per micro app (storage limited to its keys)
   → host calls initialize(itsContext) on each micro app, in order
   → host collects route trees, localization delegates, dataEndpoints, and widgetEndpoints,
-    then checks route names and full paths. A duplicate stops startup.
+    then checks full paths. A duplicate stops startup.
   → host calls communication.registerProviders(...) once. A duplicate URL stops startup.
   → Core builds the router from the route trees. The app runs. Registries are fixed from here on,
     and guarded routes need a session.
@@ -217,9 +236,8 @@ Exact signatures and Core's mapping guidance are in [contracts/routing.md](contr
 
 | Field | Type | Rules |
 |-------|------|-------|
-| `name` | `String` | Follows `<microAppId>.<screen>` and is unique in the app. Used by `AppNavigator`. |
-| `path` | `String` | A URL pattern with `:param` segments. Absolute (`/<microAppId>/…`) when declared at the top level or directly in a group, and relative to the parent when nested. The full path is unique in the app, and parameter names don't repeat within it. |
-| `builder` | `Widget Function(BuildContext, Map<String, String> parameters)` | Receives the path and query parameters merged. Their names must not overlap. |
+| `path` | `String` | A URL pattern with `:param` segments. Absolute (`/<microAppId>/…`) when declared at the top level or directly in a group, and relative to the parent when nested. The full path is unique in the app, parameter names don't repeat within it, and it is what `AppNavigator` navigates to. |
+| `builder` | `Widget Function(BuildContext, Map<String, String> parameters, Map<String, Object> body)` | Receives the path and query parameters merged (their names must not overlap) and the caller's body, which is empty after a deep link. |
 | `requiresAuthentication` | `bool` | Defaults to `true`. It takes effect if the route or any ancestor sets it. While the session is `Unauthenticated`, the host redirects to sign-in (FR-048). |
 | `presentation` | `RoutePresentation` | `page` (default) or `fullscreenDialog` |
 | `routes` | `List<MicroAppRouteNode>` | Child routes. Their paths are relative. |
