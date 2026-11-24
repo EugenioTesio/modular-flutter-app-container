@@ -23,7 +23,7 @@ export 'src/common/result.dart';                           // Result, Ok, Err
 export 'src/inter_module/inter_module_endpoint.dart';      // InterModuleEndpoint
 export 'src/inter_module/inter_module_response.dart';      // InterModuleCommunicationResponse
 export 'src/inter_module/inter_module_status.dart';        // InterModuleStatusCode, InterModuleErrorCode
-export 'src/inter_module/inter_module_value.dart';         // isInterModuleValue
+export 'src/inter_module/inter_module_validator.dart';     // InterModuleValidator
 export 'src/inter_module/inter_module_communication.dart'; // InterModuleCommunication, InterModuleHandler,
                                                            // InterModuleWidgetFactory, EndpointType
 export 'src/inter_module/endpoint_provider.dart';          // DataEndpointProvider, WidgetEndpointProvider,

@@ -69,9 +69,12 @@ abstract final class InterModuleErrorCode {
   static const String forbidden = 'forbidden';                                   // 400, provider
 }
 
-/// True if [value] follows the payload rule: null, bool, num, String,
-/// a List of conforming values, or a Map<String, …> of conforming values.
-bool isInterModuleValue(Object? value);
+/// Checks values against the payload rule. Static methods only.
+abstract final class InterModuleValidator {
+  /// True if [value] follows the payload rule: null, bool, num, String,
+  /// a List of conforming values, or a Map<String, …> of conforming values.
+  static bool isValidPayload(Object? value);
+}
 
 typedef InterModuleHandler =
     Future<InterModuleCommunicationResponse<Map<String, Object?>>> Function(
@@ -185,5 +188,5 @@ B14 is recorded inside the implementation, so the conformance check doesn't cove
 
 - **Versioning (FR-018)**: an incompatible change to parameters or results is published under a new URL (`/v2/…`). The old URL stays registered until every consumer has migrated.
 - **Access refusals**: a provider returns `400` with `unauthenticated` or `forbidden`. No other statuses are added.
-- **Payloads**: providers return only values for which `isInterModuleValue` is true. Core may assert this in debug builds.
+- **Payloads**: providers return only values for which `InterModuleValidator.isValidPayload` is true. Core may assert this in debug builds.
 - **Errors after `getWidget`** (FR-015): failures while the returned element renders or loads belong to the providing module.

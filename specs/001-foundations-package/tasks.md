@@ -95,8 +95,8 @@ description: "Task list for the Foundations package"
   This covers FR-003, FR-043, FR-053, and SC-001.
 - [X] T013 [P] Write the no-global-state scan in `foundations/test/architecture/no_global_state_test.dart`. It fails on any `static` field under `foundations/lib/` that is not `const`, and on any top-level `var` or `late` declaration (FR-016, SC-012).
 - [X] T014 [P] Write the Design System package-rules test in `foundations/packages/design_system/test/architecture/package_rules_test.dart`. It asserts that the runtime dependencies are exactly `{flutter}` and that no file under `lib/` imports `package:foundations` (FR-056).
-- [X] T015 [P] Write the payload-rule tests in `foundations/test/inter_module/inter_module_value_test.dart`. Cover the accepted and rejected values from the data-model.md "Shared rules → Payload rule": nested lists and maps, non-`String` map keys, and custom objects.
-- [X] T016 Implement `isInterModuleValue(Object?)` in `foundations/lib/src/inter_module/inter_module_value.dart` per the data-model.md payload rule, and export it from `foundations/lib/foundations.dart`. T015 must pass.
+- [X] T015 [P] Write the payload-rule tests in `foundations/test/inter_module/inter_module_validator_test.dart`. Cover the accepted and rejected values from the data-model.md "Shared rules → Payload rule": nested lists and maps, non-`String` map keys, and custom objects.
+- [X] T016 Implement `InterModuleValidator.isValidPayload(Object?)` in `foundations/lib/src/inter_module/inter_module_validator.dart` per the data-model.md payload rule, and export it from `foundations/lib/foundations.dart`. T015 must pass.
 
 **Checkpoint**: The guardrails are in place, so story work can begin.
 
@@ -382,8 +382,8 @@ description: "Task list for the Foundations package"
 
 **Purpose**: Final quality pass and handoff to Core.
 
-- [ ] T093 Run `flutter analyze` in `foundations/`, `foundations/packages/design_system/`, and `foundations/example/`, and `dart doc --dry-run` in `foundations/`. Fix every issue until there are 0 issues and 0 warnings (SC-006).
-- [ ] T094 [P] Write the Core handoff notes in `specs/001-foundations-package/core-handoff.md`. They list what Core's spec must cover:
+- [X] T093 Run `flutter analyze` in `foundations/`, `foundations/packages/design_system/`, and `foundations/example/`, and `dart doc --dry-run` in `foundations/`. Fix every issue until there are 0 issues and 0 warnings (SC-006).
+- [X] T094 [P] Write the Core handoff notes in `specs/001-foundations-package/core-handoff.md`. They list what Core's spec must cover:
   - the reusable host sequence, which replaces `AppShellContainer`;
   - one context per micro app, with stores limited to its keys;
   - a router built from contracts/routing.md;

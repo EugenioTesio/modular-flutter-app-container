@@ -134,7 +134,7 @@ foundations/
 │       │   ├── inter_module_endpoint.dart
 │       │   ├── inter_module_response.dart
 │       │   ├── inter_module_status.dart       # status codes and shared error codes
-│       │   ├── inter_module_value.dart        # payload rule (primitives/lists/maps)
+│       │   ├── inter_module_validator.dart        # payload rule (primitives/lists/maps)
 │       │   ├── inter_module_communication.dart
 │       │   └── endpoint_provider.dart         # DataEndpointProvider, WidgetEndpointProvider, registerProviders
 │       ├── exceptions/                    # every exception lives here (user convention)

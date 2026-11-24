@@ -115,7 +115,7 @@ abstract interface class AppNavigator {
 }
 ```
 
-`body` values sent to, and results returned from, another micro app's screen follow the payload rule (`isInterModuleValue`), so the caller imports none of that micro app's types. Within one micro app, a body may carry that micro app's own types.
+`body` values sent to, and results returned from, another micro app's screen follow the payload rule (`InterModuleValidator.isValidPayload`), so the caller imports none of that micro app's types. Within one micro app, a body may carry that micro app's own types.
 
 ### Navigation outcomes
 

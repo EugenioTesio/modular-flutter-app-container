@@ -67,7 +67,7 @@ This decision was revised on 2026-11-21. The `design-system` repository is still
   - Add `InterModuleStatusCode` (`ok`, `badRequest`, `notFound`, `internalError`) and `InterModuleErrorCode` (`missingRequiredParameters`, `endpointNotRegistered`, `unauthenticated`, `forbidden`) as `abstract final class`es with `static const` members (FR-012).
   - Add the named constructors `InterModuleCommunicationResponse.success(data)` and `.failure(statusCode:, errorCode:)` to the response.
   - Add `DuplicateEndpointException` (an `Exception`, kept in `lib/src/exceptions/` like every exception, that carries `url` and `type`) for rejected duplicate registrations (FR-014).
-  - Add `isInterModuleValue(Object?)`, which states the payload rule (primitives, lists, and maps with `String` keys) so Core can assert it and tests can check it.
+  - Add `InterModuleValidator.isValidPayload(Object?)`, which states the payload rule (primitives, lists, and maps with `String` keys) so Core can assert it and tests can check it.
   - Added on 2026-11-21 from `flutter_enterprise_architecture` ([R20](#r20-adapting-flutter_enterprise_architecture)):
     - `isRegistered({url, type})`;
     - an optional `traceName` on `InterModuleEndpoint`;
