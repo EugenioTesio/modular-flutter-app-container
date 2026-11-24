@@ -142,9 +142,9 @@ description: "Task list for the Foundations package"
   - Depends on T025 and T026.
 - [X] T030 [US1] Export the inter-module files from `foundations/lib/foundations.dart`, and export the conformance file from `foundations/lib/testing.dart`, per contracts/public-surface.md. T017–T021 must pass.
 - [X] T031 [US1] Build the example data demo in `foundations/example/lib/`:
-  - `foundations/example/lib/example_inter_module_communication.dart`: an in-memory implementation.
-  - `foundations/example/lib/module_b.dart`: the `/module-b/v1/details` provider. It returns 400 `invalid_id`, 404 `details_not_found`, 400 `unauthenticated` or `forbidden`, and 500 for a throw.
-  - `foundations/example/lib/main.dart`: a Module A screen with one result row per data outcome in quickstart.md V4. It uses Material widgets for now; T081 restyles it.
+  - `foundations/example/lib/host/example_inter_module_communication.dart`: an in-memory implementation.
+  - `foundations/example/lib/cards.dart`: Cards' `/cards/v1/details` provider. It returns 400 `invalid_card_id`, 404 `card_not_found`, 400 `unauthenticated` or `forbidden`, and 500 for a throw.
+  - `foundations/example/lib/transfers.dart`: a Transfers screen with one result row per data outcome in quickstart.md V4. It uses Material widgets for now; T081 restyles it.
 - [X] T032 [US1] Write the example data tests in `foundations/example/test/inter_module_data_test.dart`. Run C01–C11 and C17 against the example implementation, plus every data row of the quickstart.md V4 table. In each, the consumer tells the outcome apart using only the status and the error code (SC-008).
 
 **Checkpoint**: User Story 1 is the MVP. Teams can publish and consume data endpoints against any implementation that passes the conformance check.
@@ -319,7 +319,7 @@ description: "Task list for the Foundations package"
 - [X] T078 [US4] Export every token, theme, and component from `foundations/packages/design_system/lib/design_system.dart`, and add the 0.1.0 entry to `foundations/packages/design_system/CHANGELOG.md`. T063–T068 must pass.
 - [X] T079 [US4] Build the Design System gallery in `foundations/packages/design_system/example/lib/main.dart`: every component in every state, with light/dark and brand toggles (quickstart.md V6d).
 - [X] T080 [US4] Add `export 'package:design_system/design_system.dart';` and `export 'package:switchable_state/switchable_state.dart';` to `foundations/lib/foundations.dart`, with no `show`, `hide`, or renames (FR-002, FR-042). T069 and T070 must pass.
-- [X] T081 [US4] Restyle the example screens in `foundations/example/lib/main.dart` and `foundations/example/lib/module_b.dart` with `Ds` components under `DsTheme.light()` and `DsTheme.dark()`, wrapped in a root `StateScope` whose adapter is chosen in `main.dart`. T071 must pass.
+- [X] T081 [US4] Restyle the example screens in `foundations/example/lib/` with `Ds` components under `DsTheme.light()` and `DsTheme.dark()`, wrapped in a root `StateScope` whose adapter is chosen in `main.dart`. T071 must pass.
 - [X] T082 [US4] Write the git-consumer smoke script `foundations/tool/git_consumer_smoke.sh`, following quickstart.md V6c and research R3.
   - It creates a temporary consumer that depends on Foundations through `git: {url: <local repo>, ref: HEAD}`, then runs `flutter pub get`.
   - It asserts that `design_system` resolves "from git … in packages/design_system" at the same commit as Foundations.
@@ -338,18 +338,20 @@ description: "Task list for the Foundations package"
 
 ### Tests for User Story 5 ⚠️
 
-- [ ] T083 [US5] Extend `foundations/test/testing/inter_module_conformance_test.dart` to run C12–C16 against the reference implementation, where every case passes, and against the broken variants. The "shared registry" variant must fail C16.
-- [ ] T084 [US5] Extend `foundations/test/inter_module/endpoint_provider_test.dart`:
-  - A sample `WidgetEndpointProvider` for `/cards/v1/home-banner` is exercised by calling `build` directly. It returns 200 with a widget for `cardId = "card-123"`, and 400 `invalid_card_id` for an empty `cardId`.
+- [X] T083 [US5] Extend `foundations/test/testing/inter_module_conformance_test.dart` to run C12–C16 against the reference implementation, where every case passes, and against the broken variants. The "shared registry" variant must fail C16.
+- [X] T084 [US5] Extend `foundations/test/inter_module/endpoint_provider_test.dart`:
+  - A sample `WidgetEndpointProvider` for `/cards/v1/home-banner` is exercised by calling `build` directly. It declares no required parameters (which card to show is Cards' decision) and returns 200 with a widget. A provider that rejects its input is already covered by the Accounts balance-card tests.
   - `registerProviders(widgets: …)` calls `registerWidget`.
 
 ### Implementation for User Story 5
 
-- [ ] T085 [US5] Add cases C12–C16 to `InterModuleConformance.cases` in `foundations/lib/src/testing/inter_module_conformance.dart`, per contracts/conformance.md and behavior rows B9–B12. Cite data-model.md "Registration": `InterModuleWidgetFactory`. T083 must pass.
-- [ ] T086 [US5] Build the example's Home and Cards demo in `foundations/example/lib/`:
-  - `foundations/example/lib/cards.dart`: the `/cards/v1/home-banner` `WidgetEndpointProvider`, which returns the element synchronously while the banner loads its own data.
-  - In `foundations/example/lib/main.dart`: a Home section that uses `getWidget`, shows a `DsEmptyState` or `DsInlineMessage` fallback on 400 or 404, and has a "Cards installed" toggle.
-- [ ] T087 [US5] Write the example UI tests in `foundations/example/test/inter_module_widget_test.dart`. Run C12–C16 against the example implementation, plus every home-banner row of the quickstart.md V4 table, including the fallback when Cards is absent.
+- [X] T085 [US5] Add cases C12–C16 to `InterModuleConformance.cases` in `foundations/lib/src/testing/inter_module_conformance.dart`, per contracts/conformance.md and behavior rows B9–B12. Cite data-model.md "Registration": `InterModuleWidgetFactory`. T083 must pass.
+- [X] T086 [US5] Build the example's Home and Cards demo in `foundations/example/lib/`:
+  - Every module (Home, Transfers, Cards) has its own `MicroApp` class in its own file. The example host in `foundations/example/lib/host/` starts them through one `MicroAppContext` each, registers their providers, and installs their routes.
+  - `foundations/example/lib/cards.dart`: the parameterless `/cards/v1/home-banner` `WidgetEndpointProvider`, which returns the element synchronously while the banner loads Cards' primary card through Cards' own `ApiClient`.
+  - `foundations/example/lib/transfers.dart`: the parameterless `/transfers/v1/home-shortcut` `WidgetEndpointProvider`, a tile that opens Transfers' screen through Transfers' own navigator.
+  - `foundations/example/lib/home.dart`: Home's screen, which places Cards' banner and Transfers' shortcut through `getWidget` only. On 404 it shows a `DsEmptyState` fallback for the banner and leaves the shortcut out; on other failures it shows a `DsInlineMessage`. `main.dart` has a "Cards installed" toggle that restarts the host with or without Cards.
+- [X] T087 [US5] Write the example UI tests in `foundations/example/test/inter_module_widget_test.dart`. Run C12–C16 against the example implementation, plus every home-banner and home-shortcut row of the quickstart.md V4 table, including the fallbacks when Cards or Transfers is absent.
 
 **Checkpoint**: Teams can compose UI that another team owns, with predictable fallbacks.
 

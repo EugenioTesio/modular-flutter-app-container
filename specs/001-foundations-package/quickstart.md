@@ -78,17 +78,18 @@ cd foundations/example && flutter test
 
 | Call | Outcome |
 |------|---------|
-| `/module-b/v1/details` with `{id: '123'}` | 200 and `{id, name}` |
-| `/module-b/v1/details` with `{}` | 400, `missing_required_parameters` |
-| `/module-b/v1/details` with `{id: ''}` | 400, `invalid_id` |
-| `/module-b/v1/details` with `{id: '999'}` | 404, `details_not_found` |
+| Transfers calls `/cards/v1/details` with `{cardId: 'card-123'}` | 200 and `{cardId, maskedNumber, availableCredit}` |
+| `/cards/v1/details` with `{}` | 400, `missing_required_parameters` |
+| `/cards/v1/details` with `{cardId: ''}` | 400, `invalid_card_id` |
+| `/cards/v1/details` with `{cardId: 'card-999'}` | 404, `card_not_found` |
 | An unregistered URL | 404, `endpoint_not_registered` |
 | A provider that refuses access | 400, `unauthenticated` or `forbidden` |
 | A handler that throws | 500 |
-| `/cards/v1/home-banner` with `{cardId: 'card-123'}` | 200 and a widget, returned synchronously |
-| `/cards/v1/home-banner` with `{}` | 400, `missing_required_parameters` |
-| `/cards/v1/home-banner` with `{cardId: ''}` | 400, `invalid_card_id` |
+| `/cards/v1/home-banner` with no parameters | 200 and a widget, returned synchronously. The banner then loads Cards' primary card itself |
+| The banner's own data fails to load | The banner shows its own error, and Home is unaffected |
 | Cards not registered | 404, and Home renders its fallback |
+| `/transfers/v1/home-shortcut` with no parameters | 200 and a tile; tapping it opens Transfers through Transfers' own navigator |
+| Transfers not registered | 404, and Home leaves the shortcut out |
 
 Manual check:
 
@@ -96,7 +97,7 @@ Manual check:
 cd foundations/example && flutter run -d macos
 ```
 
-**Expected**: The demo screen shows one result row for each scenario above. The Home section shows the Cards banner, and after you toggle "Cards installed" off, it shows the fallback instead.
+**Expected**: Home shows the Cards banner, and after you toggle "Cards installed" off, it shows the fallback instead. Tapping Transfers' shortcut on Home opens Transfers, which shows one result row for each data scenario above.
 
 ## V5 — Capabilities and micro app integration with fakes only (US2, US3, SC-002, SC-005, SC-007, SC-014, SC-016)
 

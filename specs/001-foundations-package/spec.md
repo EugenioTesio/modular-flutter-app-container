@@ -154,7 +154,7 @@ A micro app developer builds screens with the shared components, themes, typogra
 
 ### User Story 5 - Embed UI that another micro app owns (Priority: P3)
 
-A developer building a federated Home wants to show a banner that the Cards team owns and maintains. Cards registers a UI factory at `/cards/v1/home-banner` that needs a `cardId`. Home asks for that UI through Foundations, then decides where to place it and what to show if it is unavailable. Home never imports the banner's concrete component.
+A developer building a federated Home wants to show a banner that the Cards team owns and maintains. Cards registers a UI factory at `/cards/v1/home-banner`. Home sends no parameters: which card the banner shows is Cards' own business, decided from Cards' own data. Home asks for that UI through Foundations, then decides where to place it and what to show if it is unavailable. Home never imports the banner's concrete component.
 
 **Why this priority**: Cross-team UI composition is valuable but builds on the same contract as Story 1. A first release can ship with data requests alone.
 
@@ -162,9 +162,9 @@ A developer building a federated Home wants to show a banner that the Cards team
 
 **Acceptance Scenarios**:
 
-1. **Given** Cards registered the banner factory with `cardId` as a required parameter, **When** Home requests it with `cardId = "card-123"`, **Then** Home receives status 200 with a UI element it can place. The element is returned immediately, without waiting for the banner's own data to load.
-2. **Given** the same registration, **When** Home requests the banner without `cardId`, **Then** Home receives status 400 with `missing_required_parameters` and no UI element.
-3. **Given** the same registration, **When** Home sends `cardId` as an empty string, **Then** Cards' factory can reject it with status 400 and `invalid_card_id`.
+1. **Given** Cards registered the banner factory, which takes no parameters, **When** Home requests it, **Then** Home receives status 200 with a UI element it can place. The element is returned immediately, without waiting for the banner's own data to load.
+2. **Given** Home placed the banner, **When** the banner's own data fails to load, **Then** the banner shows its own error state and Home's screen is unaffected, because failures after the element is returned belong to Cards.
+3. **Given** a UI factory that declares a required parameter, **When** a consumer omits it or sends `null`, **Then** the consumer receives status 400 with `missing_required_parameters` and no UI element, and the factory is not called.
 4. **Given** Cards is not part of this application, **When** Home requests the banner, **Then** Home receives status 404 with `endpoint_not_registered` and can omit the banner or show its own fallback.
 5. **Given** a data endpoint and a UI endpoint registered at the same address, **When** both are used, **Then** they do not conflict, because data registrations and UI registrations are kept separate.
 

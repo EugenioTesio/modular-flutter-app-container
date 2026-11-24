@@ -175,8 +175,12 @@ foundations/
 ├── example/
 │   ├── pubspec.yaml                 # depends on foundations via path: ../
 │   ├── lib/
-│   │   ├── main.dart                # Module A/B data demo + Home/Cards UI demo (built with Ds components)
-│   │   └── example_inter_module_communication.dart
+│   │   ├── main.dart                # the host app: lists the micro apps, "Cards installed" toggle
+│   │   ├── home.dart                # HomeMicroApp: places Cards' banner and Transfers' shortcut
+│   │   ├── transfers.dart           # TransfersMicroApp: every data outcome, calling Cards' details; home shortcut (UI)
+│   │   ├── cards.dart               # CardsMicroApp: /cards/v1/details (data) and /cards/v1/home-banner (UI)
+│   │   └── host/                    # example host: one MicroAppContext per micro app, in-memory
+│   │                                #   contracts, navigator from the route declarations
 │   └── test/                        # conformance run + every-outcome scenarios (FR-035) + re-export test
 └── packages/
     └── design_system/               # INTERIM: its own package; moves to modular-flutter-app-design-system later
