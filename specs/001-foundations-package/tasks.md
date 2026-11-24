@@ -363,16 +363,16 @@ description: "Task list for the Foundations package"
 
 **Independent Test**: Review the 0.1.0 release against `foundations/CHANGELOG.md`, `foundations/README.md`, and the pull request template. CI fails on missing documentation or analyzer issues.
 
-- [ ] T088 [P] [US6] Write `foundations/CHANGELOG.md` with the 0.1.0 entry. It has Added, Changed, Deprecated, Removed, and Breaking sections, and states which `design_system` 0.1.0 (from `packages/design_system`) and which `switchable_state` 0.1.0 it delivers (FR-033, FR-038, FR-045, research R17).
-- [ ] T089 [P] [US6] Write `foundations/README.md`. It covers:
+- [X] T088 [P] [US6] Write `foundations/CHANGELOG.md` with the 0.1.0 entry. It has Added, Changed, Deprecated, Removed, and Breaking sections, and states which `design_system` 0.1.0 (from `packages/design_system`) and which `switchable_state` 0.1.0 it delivers (FR-033, FR-038, FR-045, research R17).
+- [X] T089 [P] [US6] Write `foundations/README.md`. It covers:
   - the package's purpose and its two entry points;
   - a step-by-step guide to publishing a data endpoint in one micro app and consuming it from another (SC-004);
   - the inclusion rules: no feature models, no business entitlements, no wrapping of `design_system` or `switchable_state`, and a fixed capability set;
   - the versioning and deprecation policy;
   - the Design System relocation steps from research R3.
-- [ ] T090 [P] [US6] Write the pull request template `foundations/.github/pull_request_template.md`. Its checklist covers the semver classification (compatible or breaking), migration notes, documentation for new public elements, the inclusion rules, and the changelog entry, which also states the delivered `design_system` and `switchable_state` versions. This covers US6 scenarios 1–4.
-- [ ] T091 [US6] Extend `foundations/.github/workflows/ci.yaml` with `dart doc --dry-run`, which must report 0 warnings, and with the coverage gate from T092.
-- [ ] T092 [P] [US6] Write the coverage gate `foundations/tool/check_coverage.dart`. It parses `coverage/lcov.info` and fails below 90% line coverage of the concrete code under `lib/` (FR-034, quickstart.md V7).
+- [X] T090 [P] [US6] Write the pull request template `foundations/.github/pull_request_template.md`. Its checklist covers the semver classification (compatible or breaking), migration notes, documentation for new public elements, the inclusion rules, and the changelog entry, which also states the delivered `design_system` and `switchable_state` versions. This covers US6 scenarios 1–4.
+- [X] T091 [US6] Extend `foundations/.github/workflows/ci.yaml` with `dart doc --dry-run`, which must report 0 warnings, and with the coverage gate from T092.
+- [X] T092 [P] [US6] Add the coverage gate to CI. It runs `flutter test --coverage`, and checks `coverage/lcov.info` with `zgosalvez/github-actions-report-lcov` (`minimum-coverage: 90`), which also comments the coverage on the pull request and fails below 90% line coverage of the concrete code under `lib/` (FR-034, quickstart.md V7). No coverage tool is added to the package.
 
 **Checkpoint**: Every release is classified, documented, and gated.
 

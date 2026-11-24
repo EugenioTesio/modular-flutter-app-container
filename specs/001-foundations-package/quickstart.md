@@ -221,11 +221,11 @@ cd foundations && flutter test test/routing
 cd foundations && flutter test --coverage
 ```
 
-**Expected**: `coverage/lcov.info` reports at least 90% line coverage of the concrete code in `lib/` (value types, extensions, and the conformance check). Abstract interfaces have no executable lines.
+**Expected**: `coverage/lcov.info` reports at least 90% line coverage of the concrete code in `lib/` (value types, extensions, and the conformance check). In CI, `zgosalvez/github-actions-report-lcov` reads that file, fails the job below 90%, comments the coverage table on the pull request, and uploads an HTML report as the `coverage-report` artifact. Abstract interfaces have no executable lines.
 
 ## V8 — Developer onboarding (SC-004)
 
-This is a timed manual walkthrough. A developer who has not used Foundations before follows only `foundations/README.md` and the example. They register `/module-b/v1/details` in one sample micro app and request it from another.
+This is a timed manual walkthrough. A developer who has not used Foundations before follows only `foundations/README.md` and the example. They follow the README's guide: publish `/accounts/v1/balance` from one sample micro app and request it from another.
 
 **Expected**: The developer finishes in under 30 minutes and handles all four statuses.
 
