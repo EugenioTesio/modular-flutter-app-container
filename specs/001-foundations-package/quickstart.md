@@ -210,7 +210,7 @@ cd foundations && flutter test test/routing
   - **Push**: `push('/accounts/details/42?tab=movements', body: {'source': 'transfers'})` shows the same screen, which also receives the body.
   - **Failures**: `push('/nope/screen')` returns `Err(RouteNotFoundException('/nope/screen'))`. `popUntil('/not/in/stack')` returns the same exception and closes nothing.
   - **Results**: a picker opened with `push` (or `replace`) and closed with `pop(result: {...})` completes with `Ok(RouteCompleted(result))`. Closing without a result gives `Ok(RouteCancelled())`.
-  - **Go and popUntil**: `go('/home')` replaces the stack and returns `Ok`. After pushing two screens, `popUntil('/home')` closes both, and each opener completes with `RouteCancelled`.
+  - **Go and popUntil**: `go('/home')` replaces the stack and returns `Ok`. After pushing two screens, `popUntil('/home')` closes both, and each opener completes with `RouteCancelled`, also when the screens are inside a route group. `go` and `replace` complete the openers of the screens they close with `RouteCancelled`, and replacing the only screen completes at once with `RouteCancelled`.
   - **Sign-in**: a route that needs sign-in (directly or through an ancestor) redirects to sign-in while the fake session is `Unauthenticated`. A route with `requiresAuthentication: false` opens.
   - **Presentation**: a `fullscreenDialog` route is presented as a full-screen dialog.
   - **Groups**: moving between routes inside a `MicroAppRouteGroup` keeps the group's layout, and a `StateScope.group` placed in it keeps its state until the user leaves the group.

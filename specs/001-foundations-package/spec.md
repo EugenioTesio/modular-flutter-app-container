@@ -303,14 +303,13 @@ A Foundations maintainer changes or extends the package, knowing that every micr
   - A key MAY be declared by only one micro app. Hosts MUST stop startup when two micro apps declare the same key, naming the key and both micro apps.
   - The storage contracts given to a micro app MUST be limited to its declared keys. Any read, write, delete, or existence check of an undeclared key MUST fail with an explicit "undeclared key" failure and leave other micro apps' values untouched.
 - **FR-053**: Foundations MUST define a router-neutral **route contract** that Core uses to build the application's router, so micro apps never depend on a router package. Each route declares:
-  - a unique name (`<microAppId>.<screen>`), used for navigation;
-  - a URL path pattern that may contain named path parameters. Top-level paths start with `/<microAppId>`, and child paths are relative to their parent.
+  - a URL path pattern that may contain named path parameters. Top-level paths start with `/<microAppId>`, and child paths are relative to their parent. Routes have no separate name: callers navigate by path (FR-023);
   - a builder that receives the route's text parameters (path and query);
   - whether it needs sign-in (FR-048);
   - its presentation: a normal page or a full-screen dialog;
   - its child routes.
 
-  A **route group** wraps a set of routes in a shared layout (for example tabs) that stays in place while the user moves between them, and it may hold state scoped to the group. All route parameters are text, so every route can be opened from a deep link. Hosts MUST stop startup when two routes share a name or a full path.
+  A **route group** wraps a set of routes in a shared layout (for example tabs) that stays in place while the user moves between them, and it may hold state scoped to the group. All route parameters are text, so every route can be opened from a deep link. Hosts MUST stop startup when two routes share a full path.
 
 #### Quality and evolution
 
@@ -325,7 +324,7 @@ A Foundations maintainer changes or extends the package, knowing that every micr
 - **FR-037**: Micro apps MUST be able to use the whole public Design System through Foundations alone, with no direct dependency on the Design System package.
 - **FR-038**: Each Foundations release MUST state the Design System version it delivers. When Foundations adopts a breaking Design System change, that Foundations release MUST be marked as a breaking change.
 - **FR-054**: Until the Design System moves to its own repository, an **interim Design System package** MUST provide at least the following:
-  - **Primitive tokens**: a color palette (neutral, brand, success, warning, and error scales), a spacing scale, and a corner-radius scale.
+  - **Primitive tokens**: a color palette (neutral, success, warning, and error scales), a spacing scale, and a corner-radius scale. The brand has no fixed scale: its color comes from the brand configuration below, and the semantic roles that use it (primary action and focus) are derived from that color.
   - **Semantic tokens**: color roles that express intent, such as background, surface, text, primary action, disabled, focus, and the information, success, warning, and error backgrounds and foregrounds.
   - **A typography scale**: display, headline, title, body, label, and caption styles.
   - **Light and dark themes**: both built from a single **brand configuration** (primary color and, optionally, font family), so a brand change happens in one place.
@@ -399,7 +398,7 @@ A Foundations maintainer changes or extends the package, knowing that every micr
 - **SC-012**: Foundations contains 0 global access points and 0 global state, so micro app tests that use test doubles can run in parallel without affecting each other.
 - **SC-013**: Changing the host's state-management adapter needs a change in 0 micro apps. The sample micro app's widget tests pass under at least two different adapters, with no code changes.
 - **SC-014**: 100% of the sample micro app's endpoint providers are covered by unit tests that call them directly, without Core or any communication implementation.
-- **SC-015**: Changing Core's router implementation needs a change in 0 micro apps. 100% of declared routes can be opened both by name and from a deep link to their path.
+- **SC-015**: Changing Core's router implementation needs a change in 0 micro apps. 100% of declared routes can be opened both by navigating to their path and from a deep link to it.
 - **SC-016**: In the assembled product, 0 storage keys are declared by more than one micro app. 100% of attempts to access an undeclared key fail with the "undeclared key" outcome.
 - **SC-017**: 100% of the interim Design System's components pass the tap-target, contrast, and labeling checks in both themes and render without overflow at 200% text scale. Changing the brand's primary color in one place changes 100% of the components that use the primary-action role.
 - **SC-018**: Moving the Design System to its own repository changes exactly one dependency entry in Foundations' manifest and 0 lines in any micro app.

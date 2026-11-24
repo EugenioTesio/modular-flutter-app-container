@@ -35,6 +35,7 @@ Core builds the application's router from the micro apps' route trees, following
 - Keep a `MicroAppRouteGroup`'s layout, and any `StateScope.group` inside it, while the user moves between its routes, and release them when the user leaves.
 - Guard every route whose effective `requiresAuthentication` is true (its own flag, or an ancestor's) by sending an unauthenticated user to sign-in. The default is `true`.
 - Implement `AppNavigator` with the outcomes in routing.md: `RouteNotFoundException` for an unknown path and for `popUntil` on a path not in the stack, `RouteCompleted` or `RouteCancelled` for `push` and `replace`, and the host's not-found screen for an unmatched deep link.
+- Read the stack from the router (`routerDelegate.currentConfiguration` for go_router) instead of keeping a copy, and complete with `RouteCancelled` the opener of every screen that `go`, `replace`, or `popUntil` closes. go_router completes a pushed screen's future only when that screen is popped.
 
 The go_router mapping in routing.md and the reference adapter in `foundations/test/support/reference_router.dart` show one way to do it; its tests in `test/routing/reference_router_test.dart` list the behaviors Core's router must pass.
 

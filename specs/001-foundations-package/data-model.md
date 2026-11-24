@@ -143,7 +143,7 @@ push(path) ──► path matches no route ────────────�
           ├──► needs sign-in while Unauthenticated ──► sign-in abandoned ──► Ok(RouteCancelled)
           └──► screen shown ──► pop(result: {...}) ─────────► Ok(RouteCompleted(result))
                            ├──► pop() / system back ────────► Ok(RouteCancelled)
-                           └──► closed by popUntil ─────────► Ok(RouteCancelled)
+                           └──► closed by go, replace, or popUntil ──► Ok(RouteCancelled)
 ```
 
 ### Session (FR-024)

@@ -98,10 +98,14 @@ abstract interface class AppNavigator {
   Future<Result<NavigationResult, NavigationException>> push(String path, {Map<String, Object> body = const {}});
 
   /// Goes to path, replacing the whole stack (for example "back to home after
-  /// a transfer", or switching tabs).
+  /// a transfer", or switching tabs). Each closed screen's opener completes
+  /// with RouteCancelled.
   Result<void, NavigationException> go(String path, {Map<String, Object> body = const {}});
 
-  /// Replaces the current screen with path. Completes like push.
+  /// Replaces the current screen with path. The replaced screen's opener
+  /// completes with RouteCancelled. Completes like push, except when the
+  /// current screen is the only one: the new screen can't be closed, so it
+  /// completes with RouteCancelled at once.
   Future<Result<NavigationResult, NavigationException>> replace(String path, {Map<String, Object> body = const {}});
 
   /// Closes the current screen. A non-null result completes the opener with
@@ -126,6 +130,8 @@ abstract interface class AppNavigator {
 | The route needs sign-in and the session is `Unauthenticated` | The host sends the user to sign-in. If sign-in is abandoned, `Ok(RouteCancelled())` | The host sends the user to sign-in | — |
 | The opened screen calls `pop(result: {...})` | `Ok(RouteCompleted(result))` | — | — |
 | The opened screen closes without a result (or the user presses system back) | `Ok(RouteCancelled())` | — | — |
+| The opened screen is closed by `go`, `replace`, or `popUntil` | `Ok(RouteCancelled())` | — | — |
+| `replace` runs while the current screen is the only one | `replace`: `Ok(RouteCancelled())` at once | — | — |
 | A deep link matches no full path | The host's "not found" screen. No caller is involved | — | — |
 
 ## How Core implements it (guidance for Core's spec)
@@ -137,6 +143,8 @@ abstract interface class AppNavigator {
 | `MicroAppRouteGroup(builder, routes)` | `ShellRoute(builder: (c, s, child) => builder(c, child), routes: …)` |
 | Effective `requiresAuthentication` | A `redirect` that checks `SessionContext.current` |
 | `push` / `go` / `replace` | `push(path, extra: body)` awaiting a result / `go(path, extra: body)` / `pushReplacement(path, extra: body)`, after checking the location matches a route |
-| `pop` / `popUntil` | `pop(result)` / popping while the top location differs from `path` |
+| `pop` / `popUntil` | `pop(result)` / `restore` with the match list cut above the topmost screen at `path` (`RouteMatchList.remove`), in one step: popping screen by screen out of a group completes an opener twice |
+| The stack (`popUntil`, tests) | `routerDelegate.currentConfiguration.matches`, read on every call, with a group's match replaced by the screens inside it. No copy of the stack is kept |
+| Openers of closed screens | go_router completes a pushed screen's future only when it is popped. After `go`, `replace`, and `popUntil`, complete each pushed screen (`ImperativeRouteMatch`) that left the match list with `null`, which reads as `RouteCancelled`. `pushReplacement` of the only screen drops its future, so `replace` completes at once instead |
 
 The table is only illustrative. Any router that honors the declarations and outcomes satisfies the contract.

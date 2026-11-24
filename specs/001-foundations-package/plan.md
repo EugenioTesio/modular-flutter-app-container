@@ -42,7 +42,7 @@ Foundations holds no global state and has no third-party runtime dependencies. I
   - `flutter_test` (SDK) and `flutter_lints`;
   - `yaml`, used only by the architecture tests;
   - two `switchable_state` adapters, `switchable_state_riverpod` and `switchable_state_bloc`, used only to run the sample micro app's widget tests under two libraries (SC-013);
-  - `go_router`, used only by a reference router adapter in `test/support/` that builds a real router from the route contract (SC-015). It is never a runtime dependency.
+  - `go_router`, used only by a reference router adapter in `test/support/` that builds a real router from the route contract (SC-015). It is never a runtime dependency of Foundations. The example app, which stands in for Core's host, depends on it for its navigator.
 
 **Storage**: N/A. Foundations defines the storage contracts only; Core supplies the implementations.
 
@@ -180,7 +180,7 @@ foundations/
 │   │   ├── transfers.dart           # TransfersMicroApp: every data outcome, calling Cards' details; home shortcut (UI)
 │   │   ├── cards.dart               # CardsMicroApp: /cards/v1/details (data) and /cards/v1/home-banner (UI)
 │   │   └── host/                    # example host: one MicroAppContext per micro app, in-memory
-│   │                                #   contracts, navigator from the route declarations
+│   │                                #   contracts, go_router navigator with a sign-in redirect
 │   └── test/                        # conformance run + every-outcome scenarios (FR-035) + re-export test
 └── packages/
     └── design_system/               # INTERIM: its own package; moves to modular-flutter-app-design-system later

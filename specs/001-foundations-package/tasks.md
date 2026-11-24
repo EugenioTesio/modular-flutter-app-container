@@ -511,3 +511,11 @@ Task: "T076 molecules in foundations/packages/design_system/lib/src/molecules/"
 - [P] means a different file with no dependency on an unfinished task. Tasks that extend an existing file (T083, T084) aren't marked [P].
 - The interim Design System must stay movable: never import `foundations` from it, and keep its name and public library unchanged (FR-056).
 - Commit after each task or logical group, on the `001-foundations-package` branch of the `foundations` submodule.
+
+---
+
+## Phase 10: Convergence
+
+- [X] T096 Make the example host in `foundations/example/lib/host/` follow the host rules: stop startup on a duplicate full path or a top-level path without the `/<microAppId>` prefix, send an unauthenticated user to sign-in for routes whose effective `requiresAuthentication` is true, and keep disposing in reverse order after one teardown throws, with tests in `foundations/example/test/example_host_test.dart`, per US3/AC3, US3/AC5, US3/AC6, FR-031, FR-048, FR-053 (partial)
+- [X] T097 Align FR-053 and SC-015 in `specs/001-foundations-package/spec.md` with the path-only navigation decision (research.md, contracts/routing.md: "Routes have no separate name"), replacing the route name and "opened by name" wording, per FR-053, SC-015 (contradicts)
+- [X] T098 Resolve the brand scale in FR-054: either add a brand tonal scale derived from `DsBrand.primary` to the design system's primitive tokens, with tests, or amend FR-054 in `specs/001-foundations-package/spec.md` to match data-model.md, where the brand is the single `DsBrand` configuration, per FR-054 (partial)
