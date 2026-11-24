@@ -2,8 +2,8 @@
 
 This report records the outcome of every check in [quickstart.md](quickstart.md), V1–V10.
 
-- **Run on**: 2026-11-24, macOS, Flutter 3.47.9 (stable), Dart 3.13.7.
-- **Foundations commit**: `e43e73a` on `001-foundations-package`.
+- **Run on**: 2026-11-24, macOS, Flutter 3.47.9 (stable), Dart 3.13.7. Rerun the same day after the example navigator moved to go_router and the navigation outcomes were tightened.
+- **Foundations commit**: `821dac1` on `001-foundations-package`.
 - **Result**: every automated check passes. Three manual checks are still open: the example demo, the gallery, and the timed onboarding walkthrough. They are marked **Pending (manual)** below, with what already covers them.
 
 ## Summary
@@ -56,19 +56,21 @@ The same commands as T093: `flutter analyze` reports no issues with `public_memb
 
 ## V4 — Every inter-module outcome in a runnable example (US1, US5, FR-035, SC-008)
 
-`flutter test` in `foundations/example/`: 41 tests pass.
+`flutter test` in `foundations/example/`: 61 tests pass.
 
 - The example's in-memory communication passes C01–C17.
 - The scenario tests cover every row of the V4 table: the eight Transfers scenarios against `/cards/v1/details`, the Cards banner (built synchronously, loading its own data, its own error state, and Home's fallback without Cards), and Transfers' home shortcut (returned, opens Transfers, left out without Transfers). Each consumer tells the outcomes apart by status and error code only.
 
-**Manual demo** (`flutter run -d macos`): **Pending (manual)**. It wasn't run in this pass, because it needs someone to look at the app. Widget tests already drive the same flows through the full app: the "Cards installed" toggle swaps the banner and the fallback, and tapping Transfers' shortcut on Home opens Transfers with one row per scenario.
+The example host now navigates with go_router, as Core will. `test/example_navigator_test.dart` (13 tests) covers its stack, which is read from go_router's match list with no copy of its own, and the outcomes of `go`, `replace`, `pop`, and `popUntil`, including leaving a route group. The host tests cover the sign-in redirect for guarded routes and deep links, and the not-found screen.
+
+**Manual demo** (`flutter run -d macos`): **Pending (manual)**. It wasn't run in this pass, because it needs someone to look at the app. Widget tests already drive the same flows through the full app: the "Cards installed" toggle swaps the banner and the fallback, and tapping Transfers' shortcut on Home opens Transfers with one row per scenario. Since the example now runs on go_router, the demo should also check opening and closing Transfers and the system back button.
 
 **Result**: Pass. The manual demo is pending.
 
 ## V5 — Capabilities and micro app integration with fakes only (US2, US3, SC-002, SC-005, SC-007, SC-011, SC-014, SC-016)
 
 - `flutter test test/capabilities test/micro_app`: 77 tests pass. They cover the reference host sequence, duplicate ids and keys, per-micro-app stores and undeclared keys, `isRegistered` after startup, providers tested directly, feature-flag and session changes, flag defaults, every `ApiExceptionType`, and the missing-contract analyzer test.
-- `flutter test --concurrency=8`: all 214 tests pass in parallel, so there is no shared global state.
+- `flutter test --concurrency=8`: all 218 tests pass in parallel, so there is no shared global state.
 
 **Result**: Pass.
 
@@ -76,16 +78,16 @@ The same commands as T093: `flutter analyze` reports no issues with `public_memb
 
 - **a. The package itself**: `flutter analyze` reports no issues, and `flutter test` passes 92 tests. They cover the tap-target, label, and contrast guidelines in both themes, 200% text at 320 wide, component states, token contrast, brand derivation, and the dependency rules (`flutter` only, no `foundations` import).
 - **b. Delivery through Foundations**: in the example, `design_system 0.1.0` appears only as a transitive dependency of `foundations`. `test/design_system_reexport_test.dart` passes using only `package:foundations/foundations.dart`.
-- **c. Git consumers** (`tool/git_consumer_smoke.sh`): pass. `design_system 0.1.0` resolves from git at `e43e73` in `packages/design_system`, in the same pub-cache checkout as `foundations`.
+- **c. Git consumers** (`tool/git_consumer_smoke.sh`): pass. `design_system 0.1.0` resolves from git at `821dac` in `packages/design_system`, in the same pub-cache checkout as `foundations`.
 - **d. Gallery**: the gallery's 2 widget tests pass. The manual `flutter run -d macos` check of every state and the light/dark and brand toggles is **Pending (manual)**.
 
 **Result**: Pass. The manual gallery check is pending.
 
 ## V7 — Coverage (FR-034)
 
-`flutter test --coverage`: 214 tests pass, and `coverage/lcov.info` reports **100.00%** line coverage of `lib/` (566 of 566 lines). The minimum is 90%.
+`flutter test --coverage`: 218 tests pass, and `coverage/lcov.info` reports **100.00%** line coverage of `lib/` (566 of 566 lines). The minimum is 90%.
 
-In CI, Report LCOV enforces the 90% minimum. That job hasn't run on GitHub yet: the workflow runs on pull requests and on pushes to `main`.
+In CI, Report LCOV enforces the 90% minimum. The workflow ran on the foundations pull request, but GitHub started none of its jobs: "The job was not started because your account is locked due to a billing issue." So CI has not confirmed any check yet.
 
 **Result**: Pass locally.
 
@@ -115,7 +117,9 @@ As a stand-in, the guide was followed mechanically in a new package outside the 
 
 ## V10 — The route contract builds a real router (US2, US3, SC-015)
 
-`flutter test test/routing`: 33 tests pass. They cover route-tree validation, deep links with parameters, `push` with a body, `RouteNotFoundException` for `push` and `popUntil`, `RouteCompleted` and `RouteCancelled`, `go` and `popUntil`, sign-in guards, full-screen dialogs, and route groups that keep their layout and state.
+`flutter test test/routing`: 37 tests pass. They cover route-tree validation, deep links with parameters, `push` with a body, `RouteNotFoundException` for `push` and `popUntil`, `RouteCompleted` and `RouteCancelled`, `go` and `popUntil`, sign-in guards, full-screen dialogs, and route groups that keep their layout and state.
+
+The reference router reads its stack from go_router's match list and keeps no copy. The four newest tests cover the outcomes contracts/routing.md now states: `go` and `replace` complete the openers of the screens they close with `RouteCancelled`, `popUntil` leaves a route group and cancels each opener, and replacing the only screen completes at once with `RouteCancelled`.
 
 **Result**: Pass.
 
@@ -123,4 +127,4 @@ As a stand-in, the guide was followed mechanically in a new package outside the 
 
 1. Run the example demo (V4) and the gallery (V6d) on macOS, and check them visually.
 2. Run the timed V8 walkthrough with a developer new to Foundations.
-3. Confirm the CI coverage job on the first pull request.
+3. Unlock the GitHub account (a billing issue stops every Actions job from starting), then confirm that CI passes on the foundations pull request, including the coverage job.
