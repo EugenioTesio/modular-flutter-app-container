@@ -44,7 +44,7 @@ No fixes were needed.
 
 ## V2 — Static quality and documentation (SC-006)
 
-The same commands as T093: `flutter analyze` reports no issues with `public_member_api_docs` on, and `dart doc --dry-run` reports 0 warnings. CI now fails on any dartdoc warning, not only on errors.
+The same commands as T093: `flutter analyze` reports no issues with `public_member_api_docs` on, and `dart doc --dry-run` reports 0 warnings.
 
 **Result**: Pass.
 
@@ -87,9 +87,9 @@ The example host now navigates with go_router, as Core will. `test/example_navig
 
 `flutter test --coverage`: 218 tests pass, and `coverage/lcov.info` reports **100.00%** line coverage of `lib/` (566 of 566 lines). The minimum is 90%.
 
-In CI, Report LCOV enforces the 90% minimum. The workflow ran on the foundations pull request, but GitHub started none of its jobs: "The job was not started because your account is locked due to a billing issue." So CI has not confirmed any check yet.
+The project has no CI: the workflow was removed because GitHub Actions can't run on this account. Every check in this report runs locally.
 
-**Result**: Pass locally.
+**Result**: Pass.
 
 ## V8 — Developer onboarding (SC-004)
 
@@ -127,4 +127,3 @@ The reference router reads its stack from go_router's match list and keeps no co
 
 1. Run the example demo (V4) and the gallery (V6d) on macOS, and check them visually.
 2. Run the timed V8 walkthrough with a developer new to Foundations.
-3. Unlock the GitHub account (a billing issue stops every Actions job from starting), then confirm that CI passes on the foundations pull request, including the coverage job.

@@ -235,7 +235,7 @@ The identity fields question was deferred during clarify.
 ## R16. Quality tooling
 
 - **Decision**:
-  - Linting: `analysis_options.yaml` includes `package:flutter_lints/flutter.yaml` and adds `public_member_api_docs`, `always_declare_return_types`, `prefer_final_fields`, and `avoid_dynamic_calls`. It turns on `strict-casts`, `strict-inference`, and `strict-raw-types`. CI requires `flutter analyze` to report 0 issues.
+  - Linting: `analysis_options.yaml` includes `package:flutter_lints/flutter.yaml` and adds `public_member_api_docs`, `always_declare_return_types`, `prefer_final_fields`, and `avoid_dynamic_calls`. It turns on `strict-casts`, `strict-inference`, and `strict-raw-types`. `flutter analyze` must report 0 issues.
   - Architecture tests:
     - Parse `pubspec.yaml` with the `yaml` package (a dev dependency) and check that runtime dependencies are a subset of `{flutter, design_system, switchable_state}`. No `switchable_state_*` adapter, no state library, and no router package (such as `go_router`) may appear outside `dev_dependencies` (SC-001, FR-043, FR-053).
     - Scan `lib/` for `static` fields that are not `const` and for top-level `var`/`late` declarations (SC-012).

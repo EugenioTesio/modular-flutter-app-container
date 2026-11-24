@@ -221,7 +221,7 @@ cd foundations && flutter test test/routing
 cd foundations && flutter test --coverage
 ```
 
-**Expected**: `coverage/lcov.info` reports at least 90% line coverage of the concrete code in `lib/` (value types, extensions, and the conformance check). In CI, `zgosalvez/github-actions-report-lcov` reads that file, fails the job below 90%, comments the coverage table on the pull request, and uploads an HTML report as the `coverage-report` artifact. Abstract interfaces have no executable lines.
+**Expected**: `coverage/lcov.info` reports at least 90% line coverage of the concrete code in `lib/` (value types, extensions, and the conformance check). The check runs locally; there is no CI. Abstract interfaces have no executable lines.
 
 ## V8 — Developer onboarding (SC-004)
 

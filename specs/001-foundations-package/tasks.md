@@ -70,7 +70,7 @@ description: "Task list for the Foundations package"
 - [X] T007 Create the public entry points `foundations/lib/foundations.dart` and `foundations/lib/testing.dart`. Each gets a library doc comment that states its purpose per contracts/public-surface.md. Exports are added by later tasks as the files land.
 - [X] T008 [P] Create the example app skeleton: `foundations/example/pubspec.yaml` (depends on `foundations` with `path: ../`, `publish_to: none`) and `foundations/example/lib/main.dart` (a minimal `MaterialApp` with one placeholder screen).
 - [X] T009 [P] Create the Design System gallery skeleton: `foundations/packages/design_system/example/pubspec.yaml` (depends on `design_system` with `path: ../`) and `foundations/packages/design_system/example/lib/main.dart` (a minimal placeholder app).
-- [X] T010 [P] Create the CI workflow `foundations/.github/workflows/ci.yaml`.
+- [X] T010 [P] Create the CI workflow `foundations/.github/workflows/ci.yaml`. *(Removed later: GitHub Actions can't run on this account, so every check runs locally.)*
   - For `foundations`, `foundations/example`, and `foundations/packages/design_system`, run `flutter pub get`, `flutter analyze` (which must report 0 issues), and `flutter test`.
   - Run `flutter test --coverage` for `foundations`.
 - [X] T011 Run `flutter pub get` in `foundations/`, `foundations/packages/design_system/`, and `foundations/example/`. Confirm three things:
@@ -361,7 +361,7 @@ description: "Task list for the Foundations package"
 
 **Goal**: Versioning, changelog, inclusion rules, and documentation checks that protect every consumer.
 
-**Independent Test**: Review the 0.1.0 release against `foundations/CHANGELOG.md`, `foundations/README.md`, and the pull request template. CI fails on missing documentation or analyzer issues.
+**Independent Test**: Review the 0.1.0 release against `foundations/CHANGELOG.md`, `foundations/README.md`, and the pull request template. `flutter analyze` and `dart doc --dry-run` report missing documentation and analyzer issues.
 
 - [X] T088 [P] [US6] Write `foundations/CHANGELOG.md` with the 0.1.0 entry. It has Added, Changed, Deprecated, Removed, and Breaking sections, and states which `design_system` 0.1.0 (from `packages/design_system`) and which `switchable_state` 0.1.0 it delivers (FR-033, FR-038, FR-045, research R17).
 - [X] T089 [P] [US6] Write `foundations/README.md`. It covers:
@@ -371,8 +371,8 @@ description: "Task list for the Foundations package"
   - the versioning and deprecation policy;
   - the Design System relocation steps from research R3.
 - [X] T090 [P] [US6] Write the pull request template `foundations/.github/pull_request_template.md`. Its checklist covers the semver classification (compatible or breaking), migration notes, documentation for new public elements, the inclusion rules, and the changelog entry, which also states the delivered `design_system` and `switchable_state` versions. This covers US6 scenarios 1–4.
-- [X] T091 [US6] Extend `foundations/.github/workflows/ci.yaml` with `dart doc --dry-run`, which must report 0 warnings, and with the coverage gate from T092.
-- [X] T092 [P] [US6] Add the coverage gate to CI. It runs `flutter test --coverage`, and checks `coverage/lcov.info` with `zgosalvez/github-actions-report-lcov` (`minimum-coverage: 90`), which also comments the coverage on the pull request and fails below 90% line coverage of the concrete code under `lib/` (FR-034, quickstart.md V7). No coverage tool is added to the package.
+- [X] T091 [US6] Extend `foundations/.github/workflows/ci.yaml` with `dart doc --dry-run`, which must report 0 warnings, and with the coverage gate from T092. *(Removed with the CI workflow; both checks run locally.)*
+- [X] T092 [P] [US6] Add the coverage gate to CI. It runs `flutter test --coverage`, and checks `coverage/lcov.info` with `zgosalvez/github-actions-report-lcov` (`minimum-coverage: 90`), which also comments the coverage on the pull request and fails below 90% line coverage of the concrete code under `lib/` (FR-034, quickstart.md V7). No coverage tool is added to the package. *(Removed with the CI workflow; coverage is checked locally.)*
 
 **Checkpoint**: Every release is classified, documented, and gated.
 
