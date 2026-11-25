@@ -2,11 +2,17 @@
 
 Foundations 0.1.0 defines contracts only. Every implementation belongs to Core. This note lists what Core's specification must cover so that Core fulfills those contracts. Each item names its source in this feature's documents. The example host in `foundations/example/lib/host/` is a minimal working version of most of it, and a useful starting point.
 
-## 1. The reusable host sequence (replaces `AppShellContainer`)
+## 1. The host sequence, through `ModularAppContainer`
 
-Core provides one reusable implementation of the host sequence. The App Shell and every standalone example call it instead of writing their own ([contracts/micro-app.md](contracts/micro-app.md#host-sequence); spec "Assumptions"; plan risk "reusable host assembly"). It is the counterpart of `AppShellContainer.bootstrap` in `flutter_enterprise_architecture`, without tenants and without a global instance.
+Foundations provides `ModularAppContainer`, the counterpart of `AppShellContainer` in `flutter_enterprise_architecture`, without tenants, a route type parameter, or a global instance ([contracts/micro-app.md](contracts/micro-app.md#modularappcontainer); FR-057). It runs steps 1–5 and 7 below and throws a `ModularAppStartupException` for wiring mistakes. Core doesn't re-implement it. Core's startup:
 
-It must run these steps in order, and stop startup with an error that names the culprits:
+- supplies the `MicroAppContextFactory` (section 2);
+- calls `bootstrap(communication:, contextFor:, hostPaths:)`, with the paths of Core's own screens (sign-in, not-found) as `hostPaths`;
+- builds the router from `container.routes`, and guards it with `container.requiresAuthentication(state.fullPath)` (section 3);
+- passes `container.localizationsDelegates` to the app;
+- calls `container.dispose()` on teardown.
+
+The sequence, for reference:
 
 1. Read every micro app's `id` and `storedKeys`. A duplicate id, or a key declared by two micro apps, stops startup, naming the key and both micro apps.
 2. Build one `MicroAppContext` per micro app (see section 2).
@@ -16,7 +22,7 @@ It must run these steps in order, and stop startup with an error that names the 
 6. Build the router (section 3) and the localizations, and place the root `StateScope(adapter: …)` above the router. The adapter comes from Core's configuration (section 7).
 7. On teardown, `await dispose()` for each micro app in reverse order. A failure is reported, and the remaining teardowns still run.
 
-The reference host in `foundations/test/support/reference_host.dart` encodes these rules as tests; Core's tests should cover the same cases.
+`foundations/test/micro_app/modular_app_container_test.dart` and `modular_app_route_checks_test.dart` cover these rules. The reference host in `foundations/test/support/reference_host.dart` and the example host show the container wired to a go_router router.
 
 ## 2. One context per micro app, with stores limited to its keys
 

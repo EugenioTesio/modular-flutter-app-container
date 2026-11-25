@@ -2,8 +2,8 @@
 
 This report records the outcome of every check in [quickstart.md](quickstart.md), V1–V10.
 
-- **Run on**: 2026-11-24, macOS, Flutter 3.47.9 (stable), Dart 3.13.7. Rerun the same day after the example navigator moved to go_router and the navigation outcomes were tightened.
-- **Foundations commit**: `821dac1` on `001-foundations-package`.
+- **Run on**: 2026-11-25, macOS, Flutter 3.47.9 (stable), Dart 3.13.7. Rerun after `ModularAppContainer` (FR-057) was added, and the reference host and the example host moved onto it.
+- **Foundations commit**: `b31d34e` on `001-foundations-package`, plus the uncommitted `ModularAppContainer` change.
 - **Result**: every automated check passes. Three manual checks are still open: the example demo, the gallery, and the timed onboarding walkthrough. They are marked **Pending (manual)** below, with what already covers them.
 
 ## Summary
@@ -69,8 +69,8 @@ The example host now navigates with go_router, as Core will. `test/example_navig
 
 ## V5 — Capabilities and micro app integration with fakes only (US2, US3, SC-002, SC-005, SC-007, SC-011, SC-014, SC-016)
 
-- `flutter test test/capabilities test/micro_app`: 77 tests pass. They cover the reference host sequence, duplicate ids and keys, per-micro-app stores and undeclared keys, `isRegistered` after startup, providers tested directly, feature-flag and session changes, flag defaults, every `ApiExceptionType`, and the missing-contract analyzer test.
-- `flutter test --concurrency=8`: all 218 tests pass in parallel, so there is no shared global state.
+- `flutter test test/capabilities test/micro_app`: 108 tests pass. They cover `ModularAppContainer` (declarations handed over as declared, combined and by micro app, sign-in and owner lookups, stored keys and endpoints by micro app, host paths, initialize and dispose failures reported, a second `bootstrap` refused), its route-tree checks, the reference host sequence built on it, duplicate ids and keys, per-micro-app stores and undeclared keys, `isRegistered` after startup, providers tested directly, feature-flag and session changes, flag defaults, every `ApiExceptionType`, and the missing-contract analyzer test.
+- `flutter test --concurrency=8`: all 239 tests pass in parallel, so there is no shared global state.
 
 **Result**: Pass.
 
@@ -78,14 +78,14 @@ The example host now navigates with go_router, as Core will. `test/example_navig
 
 - **a. The package itself**: `flutter analyze` reports no issues, and `flutter test` passes 92 tests. They cover the tap-target, label, and contrast guidelines in both themes, 200% text at 320 wide, component states, token contrast, brand derivation, and the dependency rules (`flutter` only, no `foundations` import).
 - **b. Delivery through Foundations**: in the example, `design_system 0.1.0` appears only as a transitive dependency of `foundations`. `test/design_system_reexport_test.dart` passes using only `package:foundations/foundations.dart`.
-- **c. Git consumers** (`tool/git_consumer_smoke.sh`): pass. `design_system 0.1.0` resolves from git at `821dac` in `packages/design_system`, in the same pub-cache checkout as `foundations`.
+- **c. Git consumers** (`tool/git_consumer_smoke.sh`): pass. `design_system 0.1.0` resolves from git at `b31d34` in `packages/design_system`, in the same pub-cache checkout as `foundations`.
 - **d. Gallery**: the gallery's 2 widget tests pass. The manual `flutter run -d macos` check of every state and the light/dark and brand toggles is **Pending (manual)**.
 
 **Result**: Pass. The manual gallery check is pending.
 
 ## V7 — Coverage (FR-034)
 
-`flutter test --coverage`: 218 tests pass, and `coverage/lcov.info` reports **100.00%** line coverage of `lib/` (566 of 566 lines). The minimum is 90%.
+`flutter test --coverage`: 239 tests pass, and `coverage/lcov.info` reports **100.00%** line coverage of `lib/` (715 of 715 lines). The minimum is 90%.
 
 The project has no CI: the workflow was removed because GitHub Actions can't run on this account. Every check in this report runs locally.
 
@@ -117,7 +117,7 @@ As a stand-in, the guide was followed mechanically in a new package outside the 
 
 ## V10 — The route contract builds a real router (US2, US3, SC-015)
 
-`flutter test test/routing`: 37 tests pass. They cover route-tree validation, deep links with parameters, `push` with a body, `RouteNotFoundException` for `push` and `popUntil`, `RouteCompleted` and `RouteCancelled`, `go` and `popUntil`, sign-in guards, full-screen dialogs, and route groups that keep their layout and state.
+`flutter test test/routing`: 27 tests pass. The route-tree checks moved to `test/micro_app/modular_app_route_checks_test.dart` (11 tests), where they run through `ModularAppContainer.bootstrap`, which hands the trees over unchanged. The routing tests cover deep links with parameters, `push` with a body, `RouteNotFoundException` for `push` and `popUntil`, `RouteCompleted` and `RouteCancelled`, `go` and `popUntil`, sign-in guards, full-screen dialogs, and route groups that keep their layout and state.
 
 The reference router reads its stack from go_router's match list and keeps no copy. The four newest tests cover the outcomes contracts/routing.md now states: `go` and `replace` complete the openers of the screens they close with `RouteCancelled`, `popUntil` leaves a route group and cancels each opener, and replacing the only screen completes at once with `RouteCancelled`.
 

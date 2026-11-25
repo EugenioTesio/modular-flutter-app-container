@@ -346,6 +346,16 @@ A Foundations maintainer changes or extends the package, knowing that every micr
   - Its only runtime dependency is the UI framework SDK.
   - It MUST NOT reference Foundations or any other package of the product.
   - Moving it MUST require changing only the dependency source in Foundations' manifest.
+- **FR-057**: Foundations MUST provide a **modular app container**, the counterpart of `AppShellContainer` without tenants and without a route type parameter, so every host runs the host sequence the same way. It:
+  - checks that micro app ids and stored keys are unique, before any micro app initializes;
+  - builds each micro app's context through a factory the host supplies, and initializes the micro apps in order;
+  - checks the route trees (path rules, duplicate full paths, and paths the host keeps for itself) without changing them;
+  - registers every endpoint provider in one call;
+  - hands the router and the localizations the routes and delegates exactly as each micro app declared them, both combined in micro-app order and keyed by micro app;
+  - answers whether a full path requires sign-in, and which micro app declares it;
+  - lists each micro app's stored keys and endpoints;
+  - disposes the micro apps in reverse order, reporting failures and continuing.
+  It builds no router, holds no global instance, and adds no runtime dependency. Wiring mistakes are thrown as a startup exception that names every culprit.
 
 #### State-management delivery
 
@@ -417,8 +427,9 @@ A Foundations maintainer changes or extends the package, knowing that every micr
   - registries, dispatch, and required-parameter checks;
   - converting unexpected failures into status 500, and timing traced calls;
   - internal diagnostics and vendor adapters;
-  - the configurable bootstrap and the initialization that supplies contracts to hosts and micro apps;
-  - the reusable host assembly that initializes micro apps, collects their routes, localization resources, and providers, registers the providers, and checks for duplicates. This is the counterpart of `AppShellContainer` in `flutter_enterprise_architecture`. Foundations only defines the contracts and the conformance check that those implementations must pass.
+  - the configurable bootstrap and the initialization that supplies contracts to hosts and micro apps, including the context factory each host gives the modular app container;
+  - the application's router, built from what the modular app container gathers.
+  Foundations defines the contracts, the conformance check that those implementations must pass, and the modular app container (FR-057). The user decided on 2026-11-25 that the container, the counterpart of `AppShellContainer` in `flutter_enterprise_architecture`, belongs in Foundations rather than Core.
 - **Prior art**: The micro app contract adapts the user's earlier `flutter_enterprise_architecture` package. That package's broker becomes inter-module communication, its microapp container becomes the micro app contract, its brokers become endpoint providers, and its stored-keys idea becomes `storedKeys`, which keeps micro apps from overwriting each other's keys. Its routes, which were typed by the router package, become a router-neutral route contract that Core implements. These parts were left out:
   - tenants, tenant lifecycle, and the multitenant broker, at the user's request;
   - the global broker instance and the global service-locator registration of dependencies, because they conflict with the no-globals clarification. Micro apps take overrides through their own constructors instead.

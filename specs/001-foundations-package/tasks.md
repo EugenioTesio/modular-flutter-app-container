@@ -519,3 +519,15 @@ Task: "T076 molecules in foundations/packages/design_system/lib/src/molecules/"
 - [X] T096 Make the example host in `foundations/example/lib/host/` follow the host rules: stop startup on a duplicate full path or a top-level path without the `/<microAppId>` prefix, send an unauthenticated user to sign-in for routes whose effective `requiresAuthentication` is true, and keep disposing in reverse order after one teardown throws, with tests in `foundations/example/test/example_host_test.dart`, per US3/AC3, US3/AC5, US3/AC6, FR-031, FR-048, FR-053 (partial)
 - [X] T097 Align FR-053 and SC-015 in `specs/001-foundations-package/spec.md` with the path-only navigation decision (research.md, contracts/routing.md: "Routes have no separate name"), replacing the route name and "opened by name" wording, per FR-053, SC-015 (contradicts)
 - [X] T098 Resolve the brand scale in FR-054: either add a brand tonal scale derived from `DsBrand.primary` to the design system's primitive tokens, with tests, or amend FR-054 in `specs/001-foundations-package/spec.md` to match data-model.md, where the brand is the single `DsBrand` configuration, per FR-054 (partial)
+
+## Phase 11: Modular app container
+
+**Purpose**: Bring `AppShellContainer`'s role into Foundations as `ModularAppContainer`, without tenants or a route type parameter, using the current `MicroAppContext` (FR-057).
+
+- [X] T099 Add `ModularAppStartupException` and `ModularAppStartupExceptionType` in `foundations/lib/src/exceptions/modular_app_startup_exception.dart`.
+- [X] T100 Add the read-only route checks in `foundations/lib/src/micro_app/modular_app_route_checks.dart` (not exported), ported from the reference and example route helpers, plus the host-path rule.
+- [X] T101 Add `ModularAppContainer` and `MicroAppContextFactory` in `foundations/lib/src/micro_app/modular_app_container.dart`, and export both files from `foundations/lib/foundations.dart`.
+- [X] T102 [P] Write `foundations/test/micro_app/modular_app_container_test.dart`, and move the route-tree tests to `foundations/test/micro_app/modular_app_route_checks_test.dart`, run through `bootstrap`.
+- [X] T103 Make `foundations/test/support/reference_host.dart` and `reference_router.dart` use the container, and delete `reference_route_validation.dart` and `reference_startup_exception.dart`.
+- [X] T104 Make the example host, navigator, and sign-in guard in `foundations/example/lib/host/` use the container, and delete `example_route_helper.dart`.
+- [X] T105 Update spec.md (FR-057, Assumptions), plan.md, research.md, contracts/micro-app.md, contracts/public-surface.md, core-handoff.md, the Foundations README, CHANGELOG, and pull request template.

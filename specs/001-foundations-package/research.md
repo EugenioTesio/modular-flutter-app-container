@@ -315,7 +315,7 @@ This decision was added on 2026-11-21, at the user's request: take the main idea
 | `bootstrap()` + `onTenantLifecycleChanged(disposed)` | `initialize(context)` + `dispose()`. `dispose` runs in reverse order. | FR-029, FR-049 |
 | `ICDestination.trace` + `PerformanceTraceLogger` | `InterModuleEndpoint.traceName` only. Core times traced calls and records their name, duration, and status in its own diagnostics. Per the user (2026-11-21), no performance-tracing capability is added, and the capability set stays as it was. | FR-050 |
 | `RemoteConfigController.stream` | `FeatureFlags.changes` | FR-051 |
-| `AppShellContainer.bootstrap` aggregation and duplicate checks | The host sequence in [contracts/micro-app.md](contracts/micro-app.md#host-sequence). Its reusable implementation is assigned to **Core** (the article gives "shared startup" to Core). This is input for Core's spec. | Assumptions |
+| `AppShellContainer.bootstrap` aggregation and duplicate checks | `ModularAppContainer` in Foundations ([contracts/micro-app.md](contracts/micro-app.md#modularappcontainer)). It was first assigned to Core (the article gives "shared startup" to Core); on 2026-11-25 the user moved it to Foundations. Routes and delegates are handed over as declared, with no route type parameter and no tenants. | FR-057 |
 
 - **Not adopted**:
 

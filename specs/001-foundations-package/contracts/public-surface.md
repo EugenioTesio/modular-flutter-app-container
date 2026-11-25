@@ -50,10 +50,14 @@ export 'src/routing/app_navigator.dart';       // AppNavigator, NavigationResult
 export 'src/exceptions/api_exception.dart';          // ApiException, ApiExceptionType
 export 'src/exceptions/storage_exception.dart';      // StorageException, StorageExceptionType
 export 'src/exceptions/navigation_exception.dart';   // NavigationException, RouteNotFoundException
+export 'src/exceptions/modular_app_startup_exception.dart'; // ModularAppStartupException,
+                                                            // ModularAppStartupExceptionType
 
 // Micro app integration: see micro-app.md
 export 'src/micro_app/micro_app.dart';
 export 'src/micro_app/micro_app_context.dart';
+export 'src/micro_app/modular_app_container.dart'; // ModularAppContainer, MicroAppContextFactory
+// Not exported: src/micro_app/modular_app_route_checks.dart (the container's route checks).
 ```
 
 For now, `package:design_system/design_system.dart` comes from the interim package at `packages/design_system/` inside this repository ([design-system.md](design-system.md)). When the Design System moves to its own repository, this `export` line does not change. Only the dependency source in `pubspec.yaml` does (FR-056).

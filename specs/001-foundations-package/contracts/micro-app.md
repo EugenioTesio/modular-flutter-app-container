@@ -16,7 +16,7 @@ It adapts the main idea of the user's earlier `flutter_enterprise_architecture` 
 | `onTenantLifecycleChanged(resumed/disposed)` | `dispose()`. There are no tenants, so the only lifecycle events are start and teardown. Session changes are observed through `SessionContext.changes`. |
 | `registerDependencies` (global GetIt) | Not adopted (no globals). A micro app builds its internal dependencies in `initialize`, from the context, and takes overrides through its own constructor. |
 | `remoteConfig` (`RemoteConfigController`) | `MicroAppContext.featureFlags` with `FeatureFlags.changes` |
-| `AppShellContainer.bootstrap` | The host sequence below. Its reusable implementation belongs to Core. |
+| `AppShellContainer` and its `bootstrap` | `ModularAppContainer` (below): it runs steps 1–5 and 7 of the host sequence, with no route type parameter and no tenants, and hands the routes and localization delegates over as each micro app declared them. |
 | Tenants, `TenantContainer`, multitenant broker | Not adopted (tenants are out of scope) |
 | `buidActionParsers` | Not adopted (product-specific) |
 
@@ -83,7 +83,7 @@ abstract interface class MicroApp {
 
 ## Host sequence
 
-The App Shell and the standalone examples run the same sequence. Core provides the reusable implementation, the counterpart of `AppShellContainer`.
+The App Shell and the standalone examples run the same sequence. Foundations provides `ModularAppContainer`, the counterpart of `AppShellContainer`, which runs steps 1–5 and 7. The host supplies the contexts (step 2, through a `MicroAppContextFactory`) and builds the router (step 6).
 
 ```text
 1. Read id and storedKeys from every micro app.
@@ -108,12 +108,53 @@ The App Shell and the standalone examples run the same sequence. Core provides t
 
 A standalone example runs steps 1–7 with its own micro app plus any modules it chooses to compose (for example Authentication). Instead of composing a module, it can declare stub providers for the endpoints that module would provide. The stubs are registered in step 5 like any others.
 
+## ModularAppContainer
+
+```dart
+typedef MicroAppContextFactory = MicroAppContext Function(MicroApp microApp);
+
+final class ModularAppContainer {
+  ModularAppContainer({required List<MicroApp> microApps}); // initialization order
+  final List<MicroApp> microApps;
+  bool get isInitialized;
+
+  // Available once bootstrap completes; a StateError before. Unmodifiable,
+  // in micro-app order; maps are keyed by micro app id.
+  List<MicroAppRouteNode> get routes;                     // every micro app's top-level nodes
+  Map<String, List<MicroAppRouteNode>> get routesByMicroApp;
+  bool? requiresAuthentication(String fullPath);           // own flag or an ancestor's; null if undeclared
+  String? microAppIdOf(String fullPath);
+  List<LocalizationsDelegate<Object?>> get localizationsDelegates;
+  Map<String, List<LocalizationsDelegate<Object?>>> get localizationsDelegatesByMicroApp;
+  Map<String, MicroAppContext> get contexts;
+  Map<String, Set<String>> get storedKeysByMicroApp;
+  Map<String, List<InterModuleEndpoint>> get endpointsByMicroApp;
+
+  Future<void> bootstrap({
+    required InterModuleCommunication communication,
+    required MicroAppContextFactory contextFor,
+    Set<String> hostPaths = const {},
+  });
+  Future<List<(String microAppId, Object error)>> dispose();
+}
+```
+
+- It never flattens, merges, or rewrites a route tree. `routes` is each micro app's own top-level nodes, one list after another.
+- `bootstrap` throws a `ModularAppStartupException` for a wiring mistake, with a `type`:
+  - `duplicateMicroAppId`, `duplicateStoredKey`: thrown before any micro app initializes;
+  - `invalidRoutePath`, `duplicateRoutePath`, `repeatedPathParameter`, `reservedRoutePath` (a micro app declares one of `hostPaths`): thrown after initialization, before providers are registered;
+  - `alreadyBootstrapped`: a container starts once.
+- A failing `initialize` is logged and reported to that micro app's crash reporter, then rethrown. A `DuplicateEndpointException` propagates. After any failure, `dispose` still releases the micro apps that did initialize.
+- `dispose` runs in reverse order. Each failure is logged and reported with the micro app id only, and the rest still dispose. A second call does nothing.
+- Each micro app's initialization time is logged at debug level, as `microAppId` and `durationMs`.
+
 ## Guarantees and responsibilities
 
 | Concern | Owner |
 |---------|-------|
 | Building one `MicroAppContext` per micro app, with storage limited to its `storedKeys`, and choosing implementations for each environment | Core (initialization) and the host (configuration) |
-| Running the host sequence: duplicate checks, initialize, collect, register providers, build the router, guard routes, dispose | Host, using Core's reusable implementation |
+| Running the host sequence: duplicate checks, initialize, collect, check routes, register providers, dispose | `ModularAppContainer` (Foundations), called by the host |
+| Building the router and guarding routes, from `ModularAppContainer.routes` and `ModularAppContainer.requiresAuthentication` | Core, or the host |
 | Building the router from the route contract | Core ([routing.md](routing.md)) |
 | Declaring `storedKeys`, routes, localizations, and endpoint providers | Micro app |
 | Building internal dependencies in `initialize`, and accepting overrides through its own constructor (for example a fake repository in a standalone example) | Micro app |
