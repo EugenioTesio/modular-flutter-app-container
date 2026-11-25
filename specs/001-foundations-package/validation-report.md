@@ -2,8 +2,8 @@
 
 This report records the outcome of every check in [quickstart.md](quickstart.md), V1–V10.
 
-- **Run on**: 2026-11-25, macOS, Flutter 3.47.9 (stable), Dart 3.13.7. Rerun after `ModularAppContainer` (FR-057) was added, and the reference host and the example host moved onto it.
-- **Foundations commit**: `b31d34e` on `001-foundations-package`, plus the uncommitted `ModularAppContainer` change.
+- **Run on**: 2026-11-25, macOS, Flutter 3.47.9 (stable), Dart 3.13.7. Rerun after `ModularAppContainer` (FR-057) was added, the reference host and the example host moved onto it, and `hostPaths` was replaced by a `ModularAppHost` holding the host's routes, delegates, stored keys, and endpoints.
+- **Foundations commit**: `b31d34e` on `001-foundations-package`, plus the uncommitted `ModularAppHost` change on top of `4d9afbb`.
 - **Result**: every automated check passes. Three manual checks are still open: the example demo, the gallery, and the timed onboarding walkthrough. They are marked **Pending (manual)** below, with what already covers them.
 
 ## Summary
@@ -56,7 +56,7 @@ The same commands as T093: `flutter analyze` reports no issues with `public_memb
 
 ## V4 — Every inter-module outcome in a runnable example (US1, US5, FR-035, SC-008)
 
-`flutter test` in `foundations/example/`: 61 tests pass.
+`flutter test` in `foundations/example/`: 62 tests pass.
 
 - The example's in-memory communication passes C01–C17.
 - The scenario tests cover every row of the V4 table: the eight Transfers scenarios against `/cards/v1/details`, the Cards banner (built synchronously, loading its own data, its own error state, and Home's fallback without Cards), and Transfers' home shortcut (returned, opens Transfers, left out without Transfers). Each consumer tells the outcomes apart by status and error code only.
@@ -69,8 +69,8 @@ The example host now navigates with go_router, as Core will. `test/example_navig
 
 ## V5 — Capabilities and micro app integration with fakes only (US2, US3, SC-002, SC-005, SC-007, SC-011, SC-014, SC-016)
 
-- `flutter test test/capabilities test/micro_app`: 108 tests pass. They cover `ModularAppContainer` (declarations handed over as declared, combined and by micro app, sign-in and owner lookups, stored keys and endpoints by micro app, host paths, initialize and dispose failures reported, a second `bootstrap` refused), its route-tree checks, the reference host sequence built on it, duplicate ids and keys, per-micro-app stores and undeclared keys, `isRegistered` after startup, providers tested directly, feature-flag and session changes, flag defaults, every `ApiExceptionType`, and the missing-contract analyzer test.
-- `flutter test --concurrency=8`: all 239 tests pass in parallel, so there is no shared global state.
+- `flutter test test/capabilities test/micro_app`: 124 tests pass. They cover `ModularAppContainer` (declarations handed over as declared, combined and by micro app, sign-in and owner lookups, stored keys and endpoints by micro app, the host's routes, delegates, stored keys, and endpoints gathered first and checked against the micro apps', initialize and dispose failures reported, a second `bootstrap` refused), its route-tree checks, the reference host sequence built on it, duplicate ids and keys, per-micro-app stores and undeclared keys, `isRegistered` after startup, providers tested directly, feature-flag and session changes, flag defaults, every `ApiExceptionType`, and the missing-contract analyzer test.
+- `flutter test --concurrency=8`: all 255 tests pass in parallel, so there is no shared global state.
 
 **Result**: Pass.
 
@@ -85,7 +85,7 @@ The example host now navigates with go_router, as Core will. `test/example_navig
 
 ## V7 — Coverage (FR-034)
 
-`flutter test --coverage`: 239 tests pass, and `coverage/lcov.info` reports **100.00%** line coverage of `lib/` (715 of 715 lines). The minimum is 90%.
+`flutter test --coverage`: 255 tests pass, and `coverage/lcov.info` reports **99.73%** line coverage of `lib/` (750 of 752 lines). The minimum is 90%. The two lines not counted are the `const` constructors of `StringFeatureFlag` and `NumberFeatureFlag` in `feature_flags.dart`, which the tests only build as constants, so the VM never runs them. This change does not touch that file.
 
 The project has no CI: the workflow was removed because GitHub Actions can't run on this account. Every check in this report runs locally.
 
@@ -117,7 +117,7 @@ As a stand-in, the guide was followed mechanically in a new package outside the 
 
 ## V10 — The route contract builds a real router (US2, US3, SC-015)
 
-`flutter test test/routing`: 27 tests pass. The route-tree checks moved to `test/micro_app/modular_app_route_checks_test.dart` (11 tests), where they run through `ModularAppContainer.bootstrap`, which hands the trees over unchanged. The routing tests cover deep links with parameters, `push` with a body, `RouteNotFoundException` for `push` and `popUntil`, `RouteCompleted` and `RouteCancelled`, `go` and `popUntil`, sign-in guards, full-screen dialogs, and route groups that keep their layout and state.
+`flutter test test/routing`: 27 tests pass. The route-tree checks moved to `test/micro_app/modular_app_route_checks_test.dart` (18 tests, including the host-route rules), where they run through `ModularAppContainer.bootstrap`, which hands the trees over unchanged. The routing tests cover deep links with parameters, `push` with a body, `RouteNotFoundException` for `push` and `popUntil`, `RouteCompleted` and `RouteCancelled`, `go` and `popUntil`, sign-in guards, full-screen dialogs, and route groups that keep their layout and state.
 
 The reference router reads its stack from go_router's match list and keeps no copy. The four newest tests cover the outcomes contracts/routing.md now states: `go` and `replace` complete the openers of the screens they close with `RouteCancelled`, `popUntil` leaves a route group and cancels each opener, and replacing the only screen completes at once with `RouteCancelled`.
 

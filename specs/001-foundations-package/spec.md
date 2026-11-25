@@ -347,13 +347,14 @@ A Foundations maintainer changes or extends the package, knowing that every micr
   - It MUST NOT reference Foundations or any other package of the product.
   - Moving it MUST require changing only the dependency source in Foundations' manifest.
 - **FR-057**: Foundations MUST provide a **modular app container**, the counterpart of `AppShellContainer` without tenants and without a route type parameter, so every host runs the host sequence the same way. It:
-  - checks that micro app ids and stored keys are unique, before any micro app initializes;
+  - takes the host application's own declarations (routes, localization delegates, stored keys, and data and UI endpoints) next to the micro apps, without giving the host a context or a lifecycle;
+  - checks that micro app ids are unique, and that no stored key is declared twice, the host's included, before any micro app initializes;
   - builds each micro app's context through a factory the host supplies, and initializes the micro apps in order;
-  - checks the route trees (path rules, duplicate full paths, and paths the host keeps for itself) without changing them;
-  - registers every endpoint provider in one call;
-  - hands the router and the localizations the routes and delegates exactly as each micro app declared them, both combined in micro-app order and keyed by micro app;
-  - answers whether a full path requires sign-in, and which micro app declares it;
-  - lists each micro app's stored keys and endpoints;
+  - checks every route tree, the host's included (path rules, duplicate full paths, and host routes kept outside every micro app's `/<microAppId>`), without changing them;
+  - registers every endpoint provider, the host's first, in one call;
+  - hands the router and the localizations the routes and delegates exactly as they were declared: combined, with the host's first and then the micro apps' in order, and keyed by micro app;
+  - answers whether a full path requires sign-in, host routes included, and which micro app declares it;
+  - lists the host's and each micro app's stored keys and endpoints;
   - disposes the micro apps in reverse order, reporting failures and continuing.
   It builds no router, holds no global instance, and adds no runtime dependency. Wiring mistakes are thrown as a startup exception that names every culprit.
 

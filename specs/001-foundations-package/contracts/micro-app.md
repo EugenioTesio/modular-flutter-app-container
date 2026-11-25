@@ -113,36 +113,55 @@ A standalone example runs steps 1–7 with its own micro app plus any modules it
 ```dart
 typedef MicroAppContextFactory = MicroAppContext Function(MicroApp microApp);
 
+/// The host application's own declarations. Not a MicroApp: no context,
+/// no initialize, no dispose. Read once, when bootstrap runs.
+final class ModularAppHost {
+  const ModularAppHost({
+    List<MicroAppRouteNode> routes = const [],
+    List<LocalizationsDelegate<Object?>> localizationsDelegates = const [],
+    Set<String> storedKeys = const {},
+    List<DataEndpointProvider> dataEndpoints = const [],
+    List<WidgetEndpointProvider> widgetEndpoints = const [],
+  });
+}
+
 final class ModularAppContainer {
-  ModularAppContainer({required List<MicroApp> microApps}); // initialization order
+  ModularAppContainer({
+    required List<MicroApp> microApps,                // initialization order
+    ModularAppHost host = const ModularAppHost(),     // the host's own declarations
+  });
   final List<MicroApp> microApps;
+  final ModularAppHost host;
   bool get isInitialized;
 
   // Available once bootstrap completes; a StateError before. Unmodifiable,
   // in micro-app order; maps are keyed by micro app id.
-  List<MicroAppRouteNode> get routes;                     // every micro app's top-level nodes
-  Map<String, List<MicroAppRouteNode>> get routesByMicroApp;
-  bool? requiresAuthentication(String fullPath);           // own flag or an ancestor's; null if undeclared
-  String? microAppIdOf(String fullPath);
-  List<LocalizationsDelegate<Object?>> get localizationsDelegates;
+  List<MicroAppRouteNode> get routes;                     // the host's, then every micro app's top-level nodes
+  Map<String, List<MicroAppRouteNode>> get routesByMicroApp; // micro apps only
+  bool? requiresAuthentication(String fullPath);           // own flag or an ancestor's, host routes included; null if undeclared
+  String? microAppIdOf(String fullPath);                   // null for a host route
+  List<LocalizationsDelegate<Object?>> get localizationsDelegates; // the host's first
   Map<String, List<LocalizationsDelegate<Object?>>> get localizationsDelegatesByMicroApp;
   Map<String, MicroAppContext> get contexts;
   Map<String, Set<String>> get storedKeysByMicroApp;
+  Set<String> get hostStoredKeys;
   Map<String, List<InterModuleEndpoint>> get endpointsByMicroApp;
+  List<InterModuleEndpoint> get hostEndpoints;
 
   Future<void> bootstrap({
     required InterModuleCommunication communication,
     required MicroAppContextFactory contextFor,
-    Set<String> hostPaths = const {},
   });
   Future<List<(String microAppId, Object error)>> dispose();
 }
 ```
 
-- It never flattens, merges, or rewrites a route tree. `routes` is each micro app's own top-level nodes, one list after another.
+- It never flattens, merges, or rewrites a route tree. `routes` is the host's top-level nodes, then each micro app's, one list after another, so it is the router's whole route list.
+- The host's delegates come first in `localizationsDelegates`. Its stored keys are checked against the micro apps' (a clash is `duplicateStoredKey`, naming the host), and its providers are registered in the same `registerProviders` call, first. An address a micro app also declares throws `DuplicateEndpointException`. The host limits its own storage to its keys; the container builds it no context.
+- Host routes follow the micro apps' path rules, except that their absolute paths start with `/` instead of `/<microAppId>`. They must stay outside every micro app's namespace, because the router tries them first: a host full path whose first segment is a micro app id, or a parameter, stops startup.
 - `bootstrap` throws a `ModularAppStartupException` for a wiring mistake, with a `type`:
   - `duplicateMicroAppId`, `duplicateStoredKey`: thrown before any micro app initializes;
-  - `invalidRoutePath`, `duplicateRoutePath`, `repeatedPathParameter`, `reservedRoutePath` (a micro app declares one of `hostPaths`): thrown after initialization, before providers are registered;
+  - `invalidRoutePath`, `duplicateRoutePath`, `repeatedPathParameter`, `reservedRoutePath` (a host route is inside a micro app's namespace): thrown after initialization, before providers are registered;
   - `alreadyBootstrapped`: a container starts once.
 - A failing `initialize` is logged and reported to that micro app's crash reporter, then rethrown. A `DuplicateEndpointException` propagates. After any failure, `dispose` still releases the micro apps that did initialize.
 - `dispose` runs in reverse order. Each failure is logged and reported with the micro app id only, and the rest still dispose. A second call does nothing.

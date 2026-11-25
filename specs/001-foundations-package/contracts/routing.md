@@ -69,6 +69,7 @@ final class MicroAppRouteGroup extends MicroAppRouteNode {
 | Check | On failure |
 |-------|-----------|
 | Every full path is unique in the app, and top-level paths start with `/<microAppId>` | Startup stops, naming the path |
+| The host's own routes (`ModularAppHost.routes`) start with `/` and stay outside every micro app's `/<microAppId>` | Startup stops, naming the path and the micro app |
 
 ## Navigation
 

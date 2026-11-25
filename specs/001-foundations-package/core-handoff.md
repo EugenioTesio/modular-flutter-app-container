@@ -6,9 +6,9 @@ Foundations 0.1.0 defines contracts only. Every implementation belongs to Core. 
 
 Foundations provides `ModularAppContainer`, the counterpart of `AppShellContainer` in `flutter_enterprise_architecture`, without tenants, a route type parameter, or a global instance ([contracts/micro-app.md](contracts/micro-app.md#modularappcontainer); FR-057). It runs steps 1–5 and 7 below and throws a `ModularAppStartupException` for wiring mistakes. Core doesn't re-implement it. Core's startup:
 
-- supplies the `MicroAppContextFactory` (section 2);
-- calls `bootstrap(communication:, contextFor:, hostPaths:)`, with the paths of Core's own screens (sign-in, not-found) as `hostPaths`;
-- builds the router from `container.routes`, and guards it with `container.requiresAuthentication(state.fullPath)` (section 3);
+- passes Core's own declarations as the container's `host: ModularAppHost(...)`: its screens (sign-in and any other) as `MicroAppRoute`s, with `requiresAuthentication: false` on sign-in, plus its localization delegates, stored keys, and any endpoints it offers the micro apps (under a prefix no micro app id uses, such as `/app/`);
+- supplies the `MicroAppContextFactory` (section 2) and calls `bootstrap(communication:, contextFor:)`;
+- builds the router from `container.routes`, which already holds Core's routes first, and the localizations from `container.localizationsDelegates`, Core's first, and guards it with `container.requiresAuthentication(state.fullPath)` (section 3);
 - passes `container.localizationsDelegates` to the app;
 - calls `container.dispose()` on teardown.
 
@@ -17,7 +17,7 @@ The sequence, for reference:
 1. Read every micro app's `id` and `storedKeys`. A duplicate id, or a key declared by two micro apps, stops startup, naming the key and both micro apps.
 2. Build one `MicroAppContext` per micro app (see section 2).
 3. `await initialize(context)` for each micro app, in a fixed, documented order.
-4. Collect `routes`, `localizationsDelegates`, `dataEndpoints`, and `widgetEndpoints`. Validate the full paths of the route trees: no duplicate full path, every top-level path starts with `/<microAppId>`, and no repeated path parameter name.
+4. Collect `routes`, `localizationsDelegates`, `dataEndpoints`, and `widgetEndpoints`. Validate the full paths of the route trees, the host's included: no duplicate full path, every top-level micro app path starts with `/<microAppId>`, every host path stays outside those namespaces, and no repeated path parameter name.
 5. Call `communication.registerProviders(data: …, widgets: …)` once. A `DuplicateEndpointException` stops startup. From here on, the set of endpoints is fixed (section 5).
 6. Build the router (section 3) and the localizations, and place the root `StateScope(adapter: …)` above the router. The adapter comes from Core's configuration (section 7).
 7. On teardown, `await dispose()` for each micro app in reverse order. A failure is reported, and the remaining teardowns still run.

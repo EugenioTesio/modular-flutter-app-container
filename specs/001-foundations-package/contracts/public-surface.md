@@ -57,6 +57,7 @@ export 'src/exceptions/modular_app_startup_exception.dart'; // ModularAppStartup
 export 'src/micro_app/micro_app.dart';
 export 'src/micro_app/micro_app_context.dart';
 export 'src/micro_app/modular_app_container.dart'; // ModularAppContainer, MicroAppContextFactory
+export 'src/micro_app/modular_app_host.dart';      // ModularAppHost
 // Not exported: src/micro_app/modular_app_route_checks.dart (the container's route checks).
 ```
 
