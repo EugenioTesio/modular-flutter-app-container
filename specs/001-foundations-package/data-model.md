@@ -98,7 +98,7 @@ How failures map to `ApiExceptionType` ([research R10](research.md#r10-api-clien
 |--------|--------|-------|
 | Analytics event | `name: String`, `properties: Map<String, Object>` | Property values are `String`, `num`, or `bool` only. |
 | Screen view | `screenName: String`, `properties` | Same rule as events |
-| Error report | `error: Object`, `stackTrace: StackTrace?`, `reason: String?`, `context: Map<String, Object>` | The user identifier is a pseudonymous `String?` set with `setUserIdentifier`. |
+| Error report | `error: Object`, `stackTrace: StackTrace?`, `reason: String?`, `context: Map<String, Object>` | `context` values are `String`, `num`, or `bool`, and belong to that report only. No field, the error's message included, holds credentials or personal data. Core sets the pseudonymous `String?` user identifier with `setUserIdentifier`. |
 | `LogLevel` | `debug`, `info`, `warning`, `error` | Ordered from lowest to highest. |
 | Log entry | `level`, `message`, `error?`, `stackTrace?`, `context` | It never contains credentials or personal data (a documented rule). |
 
@@ -197,7 +197,7 @@ Business entitlements (what the signed-in user may do) are not modeled in Founda
 
 ### MicroAppContext (FR-016, FR-029, FR-052)
 
-This bundles every contract. Core builds **one per micro app**: most fields are shared instances, but `keyValueStore` and `secureKeyValueStore` are limited to that micro app's `storedKeys`. **All fields are required**, so a host that forgets a contract fails to compile.
+This bundles every contract. Core builds **one per micro app**: most fields are shared instances, but `crashReporter` adds the micro app's id to its reports, and `keyValueStore` and `secureKeyValueStore` are limited to that micro app's `storedKeys`. **All fields are required**, so a host that forgets a contract fails to compile.
 
 | Field | Contract |
 |-------|----------|

@@ -106,6 +106,8 @@ abstract interface class Analytics {
 
 ```dart
 abstract interface class CrashReporter {
+  /// Handled errors only. No credentials or personal data, including in the
+  /// error's message. context values are String, num, or bool.
   Future<void> recordError(
     Object error,
     StackTrace? stackTrace, {
@@ -113,7 +115,8 @@ abstract interface class CrashReporter {
     Map<String, Object> context = const {},
   });
 
-  /// Pseudonymous identifier only. Pass null to clear it.
+  /// Pseudonymous identifier only. Pass null to clear it. Core calls it;
+  /// micro apps don't.
   Future<void> setUserIdentifier(String? pseudonymousId);
 }
 ```

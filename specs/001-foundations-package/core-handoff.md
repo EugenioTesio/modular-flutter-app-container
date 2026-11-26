@@ -26,7 +26,8 @@ The sequence, for reference:
 
 ## 2. One context per micro app, with stores limited to its keys
 
-- Core builds a separate `MicroAppContext` for each micro app. The shared services are the same instances for every micro app: communication, API client, analytics, crash reporter, logger, feature flags, navigator, session, device permissions, and app info.
+- Core builds a separate `MicroAppContext` for each micro app. The shared services are the same instances for every micro app: communication, API client, analytics, logger, feature flags, navigator, session, device permissions, and app info.
+- `crashReporter` is built per micro app, over one shared vendor SDK, so every report says which micro app sent it (section 8).
 - `keyValueStore` and `secureKeyValueStore` are built per micro app, and accept only the keys that micro app declared in `storedKeys`. Any other key returns `Err(StorageException(type: undeclaredKey))` and leaves the stored value unchanged ([contracts/capabilities.md](contracts/capabilities.md); FR-022, FR-052; SC-016).
 - There are no global instances or service locators. Each environment (development, staging, production) chooses its implementations in Core's initialization configuration (FR-016).
 - Credentials and tokens stay in Core. The API client attaches them and overrides any header of the same name. They never appear in `SessionState`, logs, analytics, or crash reports ([contracts/capabilities.md](contracts/capabilities.md); FR-041).
@@ -84,6 +85,34 @@ The host chooses the state-management adapter, and Core's initialization configu
 - Whichever adapter Core's configuration supports, Core's tests must run the `switchable_state_test` conformance suite against it, so every micro app gets the behavior the contract promises.
 - Core pins the adapter at the version that matches Foundations' pinned `switchable_state` (0.1.0 today). A breaking `switchable_state` release means a breaking Foundations release (FR-045), and Core must upgrade the adapter in the same step.
 - Widget tests should allow for adapters that rebuild a frame later, such as Cubit, by calling `pumpAndSettle` after writes.
+
+## 8. Crash, error, and ANR reporting
+
+`CrashReporter` carries only the errors a micro app catches ([contracts/capabilities.md](contracts/capabilities.md); FR-021). Capturing everything else is Core's job, with whichever vendor it chooses.
+
+Capture:
+
+- Start the vendor SDK before `ModularAppContainer.bootstrap`, so a failing `initialize` is reported.
+- Capture uncaught errors through `FlutterError.onError`, `PlatformDispatcher.instance.onError`, and `Isolate.current.addErrorListener`, wherever the vendor SDK doesn't already do it.
+- Turn on native crash capture, ANR detection on Android, and app hang detection on iOS where the vendor offers it. Some vendors leave native crash capture off by default.
+- Keep the current route, and its micro app id from `ModularAppContainer.microAppIdOf`, on the vendor's reports, so a crash or an ANR can be traced to a screen.
+
+The `CrashReporter` implementation:
+
+- Build one per micro app. It adds `microAppId` to the context of every report.
+- Neither `recordError` nor `setUserIdentifier` fails toward the caller.
+- Accept a `null` stack trace, which is normal for the failure inside an `Err`. Keep reports from different call sites apart, for example by capturing `StackTrace.current` on entry.
+- `reason` and `context` belong to one report. With Crashlytics, don't store them as custom keys, which stay on later reports.
+- Only Core calls `setUserIdentifier`: `UserIdentity.userId` while the session is `Authenticated`, including at startup, and `null` while it is `Unauthenticated`.
+
+Privacy and release:
+
+- Strip quoted input before anything is sent: a `FormatException` goes without its `source`. Do this for uncaught errors too, and for whatever `initialize` and `dispose` throw, which the container forwards as thrown (FR-041).
+- Offer the vendor's collection switch, and respect the user's consent where it is required.
+- `AppLogger` entries may be attached to reports as breadcrumbs, under the same privacy rule.
+- Upload debug symbols for every release build, including the Dart symbols of a build that uses `--split-debug-info` or `--obfuscate`.
+
+Core's tests must cover the per-micro-app context, the user identifier, and the stripping.
 
 ## Also carry over
 

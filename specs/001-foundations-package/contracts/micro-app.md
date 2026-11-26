@@ -24,7 +24,8 @@ It adapts the main idea of the user's earlier `flutter_enterprise_architecture` 
 
 ```dart
 /// The contracts given to ONE micro app. Core's initialization builds one per
-/// micro app. Most fields are shared instances. keyValueStore and
+/// micro app. Most fields are shared instances. crashReporter adds the micro
+/// app's id to its reports. keyValueStore and
 /// secureKeyValueStore are limited to that micro app's storedKeys (FR-052).
 /// All fields are required, so a host that forgets a contract fails to compile.
 @immutable
@@ -90,7 +91,8 @@ The App Shell and the standalone examples run the same sequence. Foundations pro
    - A duplicate micro app id, or a key declared by two micro apps, is reported, and startup stops.
      The error names the key and both micro apps.
 2. Core initialization (environment-specific) builds one MicroAppContext per micro app.
-   - Shared services, plus storage limited to that micro app's storedKeys.
+   - Shared services, a crash reporter that adds the micro app's id, and storage
+     limited to that micro app's storedKeys.
 3. For each micro app, in a fixed order:   await microApp.initialize(itsContext)
 4. Collect from every micro app: routes, localizationsDelegates, dataEndpoints, widgetEndpoints.
    - Full paths are checked (routing.md). A failure stops startup.
