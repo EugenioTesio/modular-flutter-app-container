@@ -1,0 +1,10 @@
+# Editors and OS
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
+
+# Local Claude Code settings are never committed
+.claude/settings.local.json
